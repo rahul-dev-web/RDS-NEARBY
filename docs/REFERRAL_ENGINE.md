@@ -30,6 +30,14 @@ The Phase 6 merchant referral path is now represented in the repository as serve
 
 The qualification and expiry primitives are PostgreSQL functions invoked by trusted server-side code.
 
+## Mobile integration
+
+- `MerchantReferralScreen` reads the merchant-owned opaque token and renders the QR.
+- The QR URL is built from the `PUBLIC_WEB_URL` Dart define; the production domain is never hardcoded in the app.
+- Merchant home exposes the screen as `Invite Customers`.
+- Customer discovery records `SEARCH` as meaningful referral activity through `ReferralActivityService`.
+- Referral activity failures are intentionally non-blocking so discovery remains usable even if the referral service is temporarily unavailable.
+
 ## Deployment note
 
 The repository implementation is ready for Supabase deployment. Live migration/function deployment still requires an eligible Supabase RDS connector; the current connected RDS account is not accepted by the Supabase connector, so no live production mutation is claimed from this commit.
