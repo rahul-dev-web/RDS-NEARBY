@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CustomerDiscoveryScreen extends StatefulWidget {
   const CustomerDiscoveryScreen({super.key});
@@ -56,7 +57,9 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
       if (_openOnly) request = request.eq('is_open', true);
 
       if (query.isNotEmpty) {
-        request = request.or('name.ilike.%$query%,description.ilike.%$query%,address.ilike.%$query%');
+        final escaped = query.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
+        final pattern = '%$escaped%';
+        request = request.or('name.ilike.$pattern,description.ilike.$pattern,address.ilike.$pattern');
       }
 
       final rows = await request.order('is_open', ascending: false).limit(50);
@@ -152,9 +155,23 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
 class _BusinessCard extends StatelessWidget {
   const _BusinessCard({required this.business});
 
-  void _copyContact(BuildContext context, String value, String message) {
-    Clipboard.setData(ClipboardData(text: value));
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  String _digits(String value) => value.replaceAll(RegExp(r'[^0-9]'), '');
+
+  String _phoneUri(String value) {
+    final digits = _digits(value);
+    return digits.length == 10 ? '+91$digits' : '+$digits';
+  }
+
+  String _whatsappUri(String value) {
+    final digits = _digits(value);
+    return digits.length == 10 ? '91$digits' : digits;
+  }
+
+  Future<void> _launch(BuildContext context, Uri uri, String failureMessage) async {
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failureMessage)));
+    }
   }
   final Map<String, dynamic> business;
 
@@ -184,13 +201,33 @@ class _BusinessCard extends StatelessWidget {
             const SizedBox(height: 8), Row(children: [Icon(Icons.location_on_outlined, size: 17), SizedBox(width: 4), Expanded(child: Text(business['address'].toString(), maxLines: 1, overflow: TextOverflow.ellipsis))]),
           ],
           const SizedBox(height: 12),
-          Row(children: [
-            if (business['phone'] != null) OutlinedButton.icon(onPressed: () => _copyContact(context, business['phone'].toString(), 'Phone number copied'), icon: const Icon(Icons.call, size: 17), label: const Text('Call')),
-            const SizedBox(width: 8),
-            if (business['whatsapp'] != null) OutlinedButton.icon(onPressed: () => _copyContact(context, business['whatsapp'].toString(), 'WhatsApp number copied'), icon: const Icon(Icons.chat, size: 17), label: const Text('WhatsApp')),
-            const Spacer(),
-            if (accepting) const Text('Accepting Requests', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              if (business['phone'] != null && business['phone'].toString().trim().isNotEmpty)
+                OutlinedButton.icon(
+                  onPressed: () => _launch(context, Uri(scheme: 'tel', path: _phoneUri(business['phone'].toString())), 'Could not open the phone app.'),
+                  icon: const Icon(Icons.call, size: 17),
+                  label: const Text('Call'),
+                ),
+              if (business['whatsapp'] != null && business['whatsapp'].toString().trim().isNotEmpty)
+                OutlinedButton.icon(
+                  onPressed: () => _launch(context, Uri.parse('https://wa.me/' + _whatsappUri(business['whatsapp'].toString())), 'Could not open WhatsApp.'),
+                  icon: const Icon(Icons.chat, size: 17),
+                  label: const Text('WhatsApp'),
+                ),
+              if (business['lat'] != null && business['lng'] != null)
+                OutlinedButton.icon(
+                  onPressed: () => _launch(context, Uri.parse('https://www.google.com/maps/search/?api=1&query=' + Uri.encodeComponent(business['lat'].toString() + ',' + business['lng'].toString())), 'Could not open directions.'),
+                  icon: const Icon(Icons.directions, size: 17),
+                  label: const Text('Directions'),
+                ),
+              if (accepting)
+                const Chip(label: Text('Accepting Requests'), avatar: Icon(Icons.check_circle_outline, size: 16)),
+            ],
+          ),
         ]),
       ),
     );
