@@ -62,11 +62,27 @@ export default {
 
     if (insertError) return json({ error: "business_create_failed" }, 500);
 
+    const { data: referralToken, error: tokenError } = await ctx.supabaseAdmin
+      .from("merchant_referral_tokens")
+      .insert({ business_id: business.id })
+      .select("token, is_active")
+      .single();
+
+    if (tokenError) {
+      await ctx.supabaseAdmin.from("businesses").delete().eq("id", business.id);
+      return json({ error: "referral_token_create_failed" }, 500);
+    }
+
     await ctx.supabaseAdmin.from("audit_logs").insert({
       actor_id: userId, action: "business_created", entity_type: "business",
-      entity_id: business.id, metadata: { status: "pending", verification_status: "pending" },
+      entity_id: business.id,
+      metadata: {
+        status: "pending",
+        verification_status: "pending",
+        referral_token_created: true,
+      },
     });
 
-    return json({ business });
+    return json({ business, referral: referralToken });
   }),
 };
