@@ -1,4 +1,4 @@
-# Phase 0 / Phase 1 / Phase 2 / Phase 3 Checklist
+# Phase 0–3 Implementation Checklist
 
 ## Phase 0 — Product Freeze
 - [x] Terminology frozen
@@ -8,6 +8,12 @@
 - [x] Request states frozen
 - [x] Notification priority model frozen
 - [x] Core database domain model defined
+- [x] Product specification documented
+- [x] Product rules documented
+- [x] Architecture documented
+- [x] Database / ERD baseline documented
+- [x] RLS contract documented
+- [x] Referral, credit, points, campaign, notification, analytics and fraud docs documented
 
 ## Phase 1 — Foundation
 - [x] GitHub repository verified
@@ -22,7 +28,7 @@
 - [x] CI foundation
 - [x] Auth implementation
 - [x] Seed categories
-- [x] Edge Functions (initial role workflow)
+- [x] Initial Edge Function workflow
 
 ## Phase 2 — Authentication + Roles
 - [x] Phone OTP flow
@@ -43,17 +49,24 @@
 - [x] Ownership RLS
 - [x] Status / verification privilege protection
 - [x] Business creation audit log
-- [ ] Logo upload
-- [ ] Product/service onboarding
-- [ ] Hours editor
+- [x] Logo URL schema field
+- [x] Local Rewards configuration schema
+- [x] Permanent opaque merchant QR identity schema
+- [x] create-business Edge Function v2 creates merchant QR identity
+- [ ] Logo storage/upload UI
+- [ ] Product/service onboarding UI
+- [ ] Hours editor UI
+- [ ] Merchant settings UI
 - [ ] Admin verification UI
 - [ ] Provider-abstracted location picker
 
 ## Database hardening
 - [x] Missing foreign-key indexes added
 - [x] Business ownership indexes reviewed
+- [x] Security Advisor checked after Phase 3 schema
 - [ ] RLS policy consolidation review
 - [ ] Search/ranking indexes after real query patterns exist
 
 ## Current status
-Phase 3 foundation is implemented. Next: merchant catalog/settings, then Phase 4 public shop/web.
+
+Phase 0 documentation and the Phase 1–3 backend foundation are in place. The next implementation target is to finish the merchant onboarding UI layer, then start Phase 4 public shop/web.
