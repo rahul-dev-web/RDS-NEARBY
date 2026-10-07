@@ -7,6 +7,7 @@ import 'profile_setup_screen.dart';
 import '../merchant/merchant_onboarding_screen.dart';
 import '../merchant/merchant_catalog_screen.dart';
 import '../merchant/merchant_settings_screen.dart';
+import '../merchant/merchant_referral_screen.dart';
 import '../customer/customer_discovery_screen.dart';
 
 class AuthGate extends StatelessWidget {
@@ -109,8 +110,9 @@ class MerchantHomeScreen extends StatelessWidget {
                   title: Text(business['name']?.toString() ?? 'Business'),
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) { if (value == 'catalog') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantCatalogScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business')));
-                      if (value == 'settings') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantSettingsScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business'))); },
-                    itemBuilder: (_) => const [PopupMenuItem(value: 'catalog', child: Text('Products & Services')), PopupMenuItem(value: 'settings', child: Text('Business Settings'))],
+                      if (value == 'settings') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantSettingsScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business')));
+                      if (value == 'referral') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantReferralScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business'))); },
+                    itemBuilder: (_) => const [PopupMenuItem(value: 'catalog', child: Text('Products & Services')), PopupMenuItem(value: 'referral', child: Text('Invite Customers')), PopupMenuItem(value: 'settings', child: Text('Business Settings'))],
                   ),
                   subtitle: Text(
                     (business['status']?.toString() ?? 'pending') +
