@@ -10,6 +10,12 @@ class AuthService {
     return await client.from('profiles').select().eq('id', user.id).maybeSingle();
   }
 
+  Future<void> completeProfile({required String name}) async {
+    final user = client.auth.currentUser;
+    if (user == null) throw const AuthException('You must be signed in.');
+    await client.from('profiles').update({'name': name.trim()}).eq('id', user.id);
+  }
+
   Future<void> sendOtp(String phone) async {
     await client.auth.signInWithOtp(phone: phone);
   }
