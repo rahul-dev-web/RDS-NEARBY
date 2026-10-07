@@ -20,9 +20,14 @@ class AuthService {
     await client.auth.signInWithOtp(phone: phone);
   }
 
+  Future<void> sendPhoneOtp(String phone) => sendOtp(phone);
+
   Future<void> verifyOtp(String phone, String token) async {
     await client.auth.verifyOTP(type: OtpType.sms, phone: phone, token: token);
   }
+
+  Future<void> verifyPhoneOtp({required String phone, required String token}) =>
+      verifyOtp(phone, token);
 
   Future<String> setInitialRole(String role) async {
     final response = await client.functions.invoke('set-initial-role', body: {'role': role});
