@@ -33,5 +33,8 @@ class AppConfig {
     return AppConfig(environment: _parseEnvironment(raw));
   }
 
+  static const publicWebUrl = String.fromEnvironment('PUBLIC_WEB_URL');
+
   bool get hasBackendConfig => hasSupabaseConfig;
+  bool get hasPublicWebUrl => publicWebUrl.trim().isNotEmpty;
 }
