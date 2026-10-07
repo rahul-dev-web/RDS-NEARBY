@@ -6,6 +6,7 @@ import 'phone_auth_screen.dart';
 import 'profile_setup_screen.dart';
 import '../merchant/merchant_onboarding_screen.dart';
 import '../merchant/merchant_catalog_screen.dart';
+import '../merchant/merchant_settings_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -106,8 +107,9 @@ class MerchantHomeScreen extends StatelessWidget {
                   leading: const CircleAvatar(child: Icon(Icons.store)),
                   title: Text(business['name']?.toString() ?? 'Business'),
                   trailing: PopupMenuButton<String>(
-                    onSelected: (value) { if (value == 'catalog') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantCatalogScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business'))); },
-                    itemBuilder: (_) => const [PopupMenuItem(value: 'catalog', child: Text('Products & Services'))],
+                    onSelected: (value) { if (value == 'catalog') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantCatalogScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business')));
+                      if (value == 'settings') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantSettingsScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business'))); },
+                    itemBuilder: (_) => const [PopupMenuItem(value: 'catalog', child: Text('Products & Services')), PopupMenuItem(value: 'settings', child: Text('Business Settings'))],
                   ),
                   subtitle: Text(
                     (business['status']?.toString() ?? 'pending') +
