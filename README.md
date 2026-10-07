@@ -26,8 +26,13 @@ Mobile:
 ```bash
 cd mobile
 flutter pub get
-flutter run
+flutter run \\
+  --dart-define=SUPABASE_URL=<your-project-url> \\
+  --dart-define=SUPABASE_ANON_KEY=<your-publishable-key> \\
+  --dart-define=PUBLIC_WEB_URL=<your-public-web-origin>
 ```
+
+`PUBLIC_WEB_URL` must point to the deployed Next.js web origin so merchant referral QR codes resolve to `/r/<opaque-token>`.
 
 Web:
 
