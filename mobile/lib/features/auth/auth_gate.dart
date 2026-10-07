@@ -7,6 +7,7 @@ import 'profile_setup_screen.dart';
 import '../merchant/merchant_onboarding_screen.dart';
 import '../merchant/merchant_catalog_screen.dart';
 import '../merchant/merchant_settings_screen.dart';
+import '../customer/customer_discovery_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -30,7 +31,7 @@ class AuthGate extends StatelessWidget {
             final role = profile?['role']?.toString() ?? 'customer';
             if (name.isEmpty) return const ProfileSetupScreen();
             if (role == 'merchant') return const MerchantHomeScreen();
-            return const CustomerHomeScreen();
+            return const CustomerDiscoveryScreen();
           },
         );
       },
