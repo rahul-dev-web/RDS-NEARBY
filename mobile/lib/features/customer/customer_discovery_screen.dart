@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/referral_activity_service.dart';
+
 class CustomerDiscoveryScreen extends StatefulWidget {
   const CustomerDiscoveryScreen({super.key});
 
@@ -21,6 +23,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
   List<Map<String, dynamic>> _businesses = [];
 
   SupabaseClient get _client => Supabase.instance.client;
+  ReferralActivityService get _referralActivity => ReferralActivityService(_client);
 
   @override
   void initState() {
@@ -81,6 +84,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
       }
 
       if (mounted) setState(() { _businesses = businesses; _loading = false; });
+      await _referralActivity.recordMeaningfulActivity('SEARCH');
     } catch (e) {
       if (mounted) setState(() { _error = 'Could not load nearby businesses.'; _loading = false; });
     }
