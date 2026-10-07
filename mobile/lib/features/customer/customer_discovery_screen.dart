@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CustomerDiscoveryScreen extends StatefulWidget {
@@ -150,6 +151,11 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
 
 class _BusinessCard extends StatelessWidget {
   const _BusinessCard({required this.business});
+
+  void _copyContact(BuildContext context, String value, String message) {
+    Clipboard.setData(ClipboardData(text: value));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
   final Map<String, dynamic> business;
 
   @override
@@ -179,9 +185,9 @@ class _BusinessCard extends StatelessWidget {
           ],
           const SizedBox(height: 12),
           Row(children: [
-            if (business['phone'] != null) OutlinedButton.icon(onPressed: null, icon: const Icon(Icons.call, size: 17), label: const Text('Call')),
+            if (business['phone'] != null) OutlinedButton.icon(onPressed: () => _copyContact(context, business['phone'].toString(), 'Phone number copied'), icon: const Icon(Icons.call, size: 17), label: const Text('Call')),
             const SizedBox(width: 8),
-            if (business['whatsapp'] != null) OutlinedButton.icon(onPressed: null, icon: const Icon(Icons.chat, size: 17), label: const Text('WhatsApp')),
+            if (business['whatsapp'] != null) OutlinedButton.icon(onPressed: () => _copyContact(context, business['whatsapp'].toString(), 'WhatsApp number copied'), icon: const Icon(Icons.chat, size: 17), label: const Text('WhatsApp')),
             const Spacer(),
             if (accepting) const Text('Accepting Requests', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
           ]),
