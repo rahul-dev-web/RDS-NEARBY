@@ -1,15 +1,19 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
-body {
-  background: #f6f7f9;
-  color: #17181a;
-  font-family: Arial, Helvetica, sans-serif;
-}
+body { background: #f7f8fa; color: #15171a; font-family: Arial, Helvetica, sans-serif; }
 a { color: inherit; text-decoration: none; }
 .container { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
-.card { background: #fff; border: 1px solid #e6e8ec; border-radius: 18px; padding: 20px; }
-.muted { color: #69707d; }
-.badge { display: inline-flex; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; background: #eef2f6; }
-.badge.open { background: #e8f7ed; color: #176b35; }
-.badge.sponsored { background: #fff4d6; color: #7a5700; }
-.grid { display: grid; gap: 16px; }
+.hero { padding: 88px 0 72px; background: linear-gradient(180deg, #eef3ff 0%, #f7f8fa 100%); border-bottom: 1px solid #e4e7ec; }
+.eyebrow { font-size: 12px; letter-spacing: .14em; font-weight: 800; color: #596273; }
+h1 { max-width: 850px; margin: 14px 0; font-size: clamp(42px, 7vw, 78px); line-height: .98; letter-spacing: -.045em; }
+h1 span { color: #3157d5; }
+h2 { margin: 6px 0 0; font-size: 30px; letter-spacing: -.025em; }
+.hero p { max-width: 650px; color: #606978; font-size: 18px; line-height: 1.55; }
+.searchBox { display: flex; align-items: center; gap: 10px; max-width: 760px; margin-top: 28px; padding: 8px 8px 8px 18px; background: #fff; border: 1px solid #dfe3ea; border-radius: 18px; box-shadow: 0 16px 45px rgba(30, 45, 80, .09); }
+.searchBox span { font-size: 28px; color: #7b8493; }.searchBox input { flex: 1; min-width: 0; border: 0; outline: 0; font-size: 16px; }.searchBox button, .growthInner > a { border: 0; border-radius: 12px; padding: 13px 18px; background: #16181d; color: #fff; font-weight: 800; cursor: pointer; }
+.quickSearches { margin-top: 14px; color: #697282; font-size: 13px; }.quickSearches span { font-weight: 800; color: #3d4450; }
+.section { padding: 62px 0; }.sectionHead { display: flex; align-items: end; justify-content: space-between; gap: 20px; margin-bottom: 20px; }.muted { color: #747d8b; font-size: 13px; }
+.categoryGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }.categoryCard { min-height: 115px; display: flex; flex-direction: column; justify-content: space-between; padding: 18px; background: #fff; border: 1px solid #e3e6eb; border-radius: 16px; transition: transform .15s ease, border-color .15s ease; }.categoryCard:hover, .businessCard:hover { transform: translateY(-2px); border-color: #bcc5d4; }.categoryCard span { font-size: 12px; color: #7a8290; }
+.businessGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }.businessCard { padding: 18px; background: #fff; border: 1px solid #e3e6eb; border-radius: 16px; transition: transform .15s ease, border-color .15s ease; }.businessCard h3 { margin: 14px 0 5px; font-size: 19px; }.businessCard p { margin: 0 0 8px; color: #5f6876; }.businessCard small { color: #7a8290; }.businessTop { display: flex; justify-content: space-between; gap: 8px; align-items: center; }.status, .requestStatus { display: inline-flex; border-radius: 999px; padding: 6px 9px; font-size: 11px; font-weight: 800; background: #eef0f3; }.status.open { background: #e8f7ed; color: #176b35; }.requestStatus { background: #eef2ff; color: #3157d5; }
+.notice { padding: 24px; background: #fff; border: 1px solid #e3e6eb; border-radius: 16px; color: #697282; }.growth { padding: 56px 0; background: #16181d; color: #fff; }.growthInner { display: flex; justify-content: space-between; align-items: center; gap: 30px; }.growth h2 { margin-top: 10px; }.growth p { max-width: 650px; color: #b9bec8; line-height: 1.55; }.growthInner > a { background: #fff; color: #16181d; white-space: nowrap; }
+@media (max-width: 800px) { .categoryGrid { grid-template-columns: repeat(2, 1fr); }.businessGrid { grid-template-columns: 1fr; }.growthInner { flex-direction: column; align-items: flex-start; }.sectionHead { align-items: flex-start; flex-direction: column; }.searchBox button { padding: 12px 14px; } }
