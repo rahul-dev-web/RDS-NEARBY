@@ -1,28 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'core/app_config.dart';
+import 'core/app_logger.dart';
 import 'core/supabase_config.dart';
 import 'features/auth/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (hasSupabaseConfig) {
+  final config = AppConfig.fromDefines();
+  AppLogger.info('Starting RDS Nearby in ${config.environment.name}');
+
+  if (config.hasBackendConfig) {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: supabasePublishableKey,
     );
   }
 
-  runApp(const RdsNearbyApp());
+  runApp(RdsNearbyApp(config: config));
 }
 
 class RdsNearbyApp extends StatelessWidget {
-  const RdsNearbyApp({super.key});
+  const RdsNearbyApp({super.key, required this.config});
+
+  final AppConfig config;
 
   @override
   Widget build(BuildContext context) {
-    if (!hasSupabaseConfig) {
+    if (!config.hasBackendConfig) {
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
         home: _MissingConfigScreen(),
