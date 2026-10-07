@@ -38,7 +38,7 @@ class AuthService {
     }
     final data = response.data;
     if (data is! Map || data['role'] is! String) {
-      throw const FunctionsException('Invalid role response');
+      throw Exception('Invalid role response');
     }
     return data['role'] as String;
   }
