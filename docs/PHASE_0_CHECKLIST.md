@@ -54,9 +54,9 @@
 - [x] Permanent opaque merchant QR identity schema
 - [x] create-business Edge Function v2 creates merchant QR identity
 - [ ] Logo storage/upload UI
-- [ ] Product/service onboarding UI
-- [ ] Hours editor UI
-- [ ] Merchant settings UI
+- [x] Product/service onboarding UI
+- [x] Hours editor UI
+- [x] Merchant settings UI
 - [ ] Admin verification UI
 - [ ] Provider-abstracted location picker
 
@@ -69,4 +69,4 @@
 
 ## Current status
 
-Phase 0 documentation and the Phase 1–3 backend foundation are in place. The next implementation target is to finish the merchant onboarding UI layer, then start Phase 4 public shop/web.
+Phase 0 documentation and the Phase 1–3 backend foundation are in place. Merchant onboarding UI is now complete for products/services, settings, and weekly hours. The next implementation target is the provider-abstracted location layer and Phase 4 public shop/web.
