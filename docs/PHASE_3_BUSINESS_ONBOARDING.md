@@ -28,8 +28,8 @@ The Phase 3 foundation currently accepts business coordinates as latitude/longit
 
 ## Next Phase 3 layer
 
+- First products/services onboarding UI (implemented)
+- Merchant business settings: phone/WhatsApp, Accepting Requests, Local Rewards limits (implemented)
 - Business logo/storage upload
-- First products/services
 - Business-hours editor
-- Merchant business settings
 - Verification/admin moderation UI
