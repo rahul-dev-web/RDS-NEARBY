@@ -29,17 +29,16 @@ class AuthService {
   }
 
   Future<String> setInitialRole(String role) async {
-    final response = await client.functions.invoke('set-initial-role', body: {'role': role});
-    if (response.status < 200 || response.status >= 300) {
-      final message = response.data is Map && response.data['error'] != null
-          ? response.data['error'].toString()
-          : 'Unable to set role';
-      throw FunctionsException(message, status: response.status);
-    }
+    final response = await client.functions.invoke(
+      'set-initial-role',
+      body: {'role': role},
+    );
+
     final data = response.data;
     if (data is! Map || data['role'] is! String) {
       throw Exception('Invalid role response');
     }
+
     return data['role'] as String;
   }
 
