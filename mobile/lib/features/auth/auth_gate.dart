@@ -5,6 +5,7 @@ import 'auth_service.dart';
 import 'phone_auth_screen.dart';
 import 'profile_setup_screen.dart';
 import '../merchant/merchant_onboarding_screen.dart';
+import '../merchant/merchant_catalog_screen.dart';
 
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
@@ -104,6 +105,10 @@ class MerchantHomeScreen extends StatelessWidget {
                 child: ListTile(
                   leading: const CircleAvatar(child: Icon(Icons.store)),
                   title: Text(business['name']?.toString() ?? 'Business'),
+                  trailing: PopupMenuButton<String>(
+                    onSelected: (value) { if (value == 'catalog') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantCatalogScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business'))); },
+                    itemBuilder: (_) => const [PopupMenuItem(value: 'catalog', child: Text('Products & Services'))],
+                  ),
                   subtitle: Text(
                     (business['status']?.toString() ?? 'pending') +
                     ' · ' +
