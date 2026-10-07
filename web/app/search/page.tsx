@@ -10,8 +10,21 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   let error = false;
   if (url && key && query) {
     const supabase = createClient(url, key);
-    const result = await supabase.from('businesses').select('id,name,slug,description,address,is_open,accepting_requests,categories(name,slug)').eq('status','active').eq('verification_status','verified').or(`name.ilike.%${query}%,description.ilike.%${query}%,address.ilike.%${query}%`).order('is_open',{ascending:false}).limit(50);
-    businesses = result.data ?? []; error = Boolean(result.error);
+    // Escape LIKE metacharacters before using user input in ilike patterns.
+    const escaped = query.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+    const select = 'id,name,slug,description,address,is_open,accepting_requests,categories(name,slug)';
+    const pattern = `%${escaped}%`;
+    const [nameResult, descriptionResult, addressResult] = await Promise.all([
+      supabase.from('businesses').select(select).eq('status','active').eq('verification_status','verified').ilike('name', pattern).limit(50),
+      supabase.from('businesses').select(select).eq('status','active').eq('verification_status','verified').ilike('description', pattern).limit(50),
+      supabase.from('businesses').select(select).eq('status','active').eq('verification_status','verified').ilike('address', pattern).limit(50),
+    ]);
+    error = Boolean(nameResult.error || descriptionResult.error || addressResult.error);
+    const merged = [...(nameResult.data ?? []), ...(descriptionResult.data ?? []), ...(addressResult.data ?? [])];
+    const unique = new Map(merged.map((business) => [business.id, business]));
+    businesses = [...unique.values()]
+      .sort((a, b) => Number(b.is_open) - Number(a.is_open))
+      .slice(0, 50);
   }
   return <main className="container section">
     <span className="eyebrow">SEARCH</span><h1 className="searchTitle">{query ? <>Results for “{query}”</> : 'Search nearby businesses'}</h1>
