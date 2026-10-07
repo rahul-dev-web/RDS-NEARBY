@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+import 'core/supabase_config.dart';
+import 'features/auth/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
+  if (hasSupabaseConfig) {
     await Supabase.initialize(
       url: supabaseUrl,
-      anonKey: supabaseAnonKey,
+      anonKey: supabasePublishableKey,
     );
   }
 
@@ -22,6 +22,13 @@ class RdsNearbyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!hasSupabaseConfig) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: _MissingConfigScreen(),
+      );
+    }
+
     return MaterialApp(
       title: 'RDS Nearby',
       debugShowCheckedModeBanner: false,
@@ -29,26 +36,25 @@ class RdsNearbyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
         useMaterial3: true,
       ),
-      home: const FoundationScreen(),
+      home: const AuthGate(),
     );
   }
 }
 
-class FoundationScreen extends StatelessWidget {
-  const FoundationScreen({super.key});
+class _MissingConfigScreen extends StatelessWidget {
+  const _MissingConfigScreen();
 
   @override
   Widget build(BuildContext context) {
-    final connected = supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('RDS Nearby')),
+    return const Scaffold(
       body: Center(
-        child: Text(
-          connected
-              ? 'Foundation ready\nSupabase configuration loaded'
-              : 'Foundation ready\nRun with SUPABASE_URL and SUPABASE_ANON_KEY',
-          textAlign: TextAlign.center,
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Supabase configuration is missing.\n\n'
+            'Run with SUPABASE_URL and SUPABASE_ANON_KEY via --dart-define.',
+            textAlign: TextAlign.center,
+          ),
         ),
       ),
     );
