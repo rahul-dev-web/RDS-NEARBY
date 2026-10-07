@@ -1,4 +1,4 @@
-# Phase 0 / Phase 1 Checklist
+# Phase 0 / Phase 1 / Phase 2 / Phase 3 Checklist
 
 ## Phase 0 — Product Freeze
 - [x] Terminology frozen
@@ -24,10 +24,36 @@
 - [x] Seed categories
 - [x] Edge Functions (initial role workflow)
 
+## Phase 2 — Authentication + Roles
+- [x] Phone OTP flow
+- [x] Profile bootstrap trigger
+- [x] Customer / Merchant initial role workflow
+- [x] Server-controlled role transition
+- [x] Role-aware Flutter auth gate
+
+## Phase 3 — Business Onboarding
+- [x] Merchant-only business creation
+- [x] Category validation
+- [x] Business profile fields
+- [x] Location coordinates required
+- [x] Phone / WhatsApp
+- [x] Address / locality
+- [x] Default opening-hours payload
+- [x] Pending verification state
+- [x] Ownership RLS
+- [x] Status / verification privilege protection
+- [x] Business creation audit log
+- [ ] Logo upload
+- [ ] Product/service onboarding
+- [ ] Hours editor
+- [ ] Admin verification UI
+- [ ] Provider-abstracted location picker
+
 ## Database hardening
 - [x] Missing foreign-key indexes added
+- [x] Business ownership indexes reviewed
 - [ ] RLS policy consolidation review
 - [ ] Search/ranking indexes after real query patterns exist
 
 ## Current status
-Phase 0 is frozen. Phase 1 foundation is in place; authentication and the first server-controlled role workflow are implemented; business onboarding is the next implementation layer.
+Phase 3 foundation is implemented. Next: merchant catalog/settings, then Phase 4 public shop/web.
