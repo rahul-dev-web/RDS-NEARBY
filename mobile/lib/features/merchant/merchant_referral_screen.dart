@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/app_config.dart';
+
 class MerchantReferralScreen extends StatefulWidget {
   const MerchantReferralScreen({
     super.key,
@@ -43,7 +45,9 @@ class _MerchantReferralScreenState extends State<MerchantReferralScreen> {
       if (!mounted) return;
       if (row == null || row['is_active'] != true) {
         setState(() {
-          _error = 'Referral QR is not active for this business yet.';
+          _error = AppConfig.publicWebUrl.trim().isEmpty
+              ? 'Public web URL is not configured for referral QR.'
+              : 'Referral QR is not active for this business yet.';
           _loading = false;
         });
         return;
