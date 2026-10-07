@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
+    await Supabase.initialize(
+      url: supabaseUrl,
+      anonKey: supabaseAnonKey,
+    );
+  }
+
   runApp(const RdsNearbyApp());
 }
 
@@ -26,11 +39,15 @@ class FoundationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final connected = supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(title: const Text('RDS Nearby')),
-      body: const Center(
+      body: Center(
         child: Text(
-          'Foundation ready\nCustomer + Merchant app shell',
+          connected
+              ? 'Foundation ready\nSupabase configuration loaded'
+              : 'Foundation ready\nRun with SUPABASE_URL and SUPABASE_ANON_KEY',
           textAlign: TextAlign.center,
         ),
       ),
