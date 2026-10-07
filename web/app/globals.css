@@ -1,0 +1,15 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: #f6f7f9;
+  color: #17181a;
+  font-family: Arial, Helvetica, sans-serif;
+}
+a { color: inherit; text-decoration: none; }
+.container { width: min(1120px, calc(100% - 32px)); margin: 0 auto; }
+.card { background: #fff; border: 1px solid #e6e8ec; border-radius: 18px; padding: 20px; }
+.muted { color: #69707d; }
+.badge { display: inline-flex; border-radius: 999px; padding: 6px 10px; font-size: 12px; font-weight: 700; background: #eef2f6; }
+.badge.open { background: #e8f7ed; color: #176b35; }
+.badge.sponsored { background: #fff4d6; color: #7a5700; }
+.grid { display: grid; gap: 16px; }
