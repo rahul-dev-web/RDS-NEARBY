@@ -20,9 +20,9 @@
 - [x] Supabase client configuration
 - [x] Environment example files
 - [x] CI foundation
-- [ ] Auth implementation
+- [x] Auth implementation
 - [x] Seed categories
-- [ ] Edge Functions
+- [x] Edge Functions (initial role workflow)
 
 ## Database hardening
 - [x] Missing foreign-key indexes added
@@ -30,4 +30,4 @@
 - [ ] Search/ranking indexes after real query patterns exist
 
 ## Current status
-Phase 0 is frozen. Phase 1 foundation is in place; authentication and server workflows remain the next implementation layer.
+Phase 0 is frozen. Phase 1 foundation is in place; authentication and the first server-controlled role workflow are implemented; business onboarding is the next implementation layer.
