@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/referral_activity_service.dart';
+import 'customer_referral_screen.dart';
 
 class CustomerDiscoveryScreen extends StatefulWidget {
   const CustomerDiscoveryScreen({super.key});
@@ -99,7 +100,18 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nearby')),
+      appBar: AppBar(
+        title: const Text('Nearby'),
+        actions: [
+          IconButton(
+            tooltip: 'Local Points & Referral',
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const CustomerReferralScreen()),
+            ),
+            icon: const Icon(Icons.stars_outlined),
+          ),
+        ],
+      ),
       body: RefreshIndicator(
         onRefresh: _search,
         child: ListView(
