@@ -12,6 +12,17 @@ export default {
     const userId = ctx.userClaims?.id;
     if (!userId) return json({ error: "unauthorized" }, 401);
 
+    const { data: profile, error: profileError } = await ctx.supabaseAdmin
+      .from("profiles")
+      .select("id,role,status")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (profileError) return json({ error: "profile_lookup_failed" }, 500);
+    if (!profile || profile.role !== "customer" || profile.status !== "active") {
+      return json({ error: "customer_only" }, 403);
+    }
+
     const { data: existing, error: existingError } = await ctx.supabaseAdmin
       .from("customer_referral_tokens")
       .select("id,token,is_active")
