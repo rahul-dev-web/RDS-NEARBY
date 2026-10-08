@@ -122,7 +122,7 @@ begin
 end;
 $$;
 
-revoke all on function public.consume_merchant_credits(uuid,integer,text,uuid,text) from public;
+revoke execute on function public.consume_merchant_credits(uuid,integer,text,uuid,text) from public, anon, authenticated;
 grant execute on function public.consume_merchant_credits(uuid,integer,text,uuid,text) to service_role;
 
 create or replace function public.create_boost_shop_campaign(
@@ -203,7 +203,7 @@ begin
 end;
 $$;
 
-revoke all on function public.create_boost_shop_campaign(uuid,text) from public;
+revoke execute on function public.create_boost_shop_campaign(uuid,text) from public, anon, authenticated;
 grant execute on function public.create_boost_shop_campaign(uuid,text) to service_role;
 
 create or replace function public.create_promote_offer_campaign(
@@ -295,7 +295,7 @@ begin
 end;
 $$;
 
-revoke all on function public.create_promote_offer_campaign(uuid,uuid,text) from public;
+revoke execute on function public.create_promote_offer_campaign(uuid,uuid,text) from public, anon, authenticated;
 grant execute on function public.create_promote_offer_campaign(uuid,uuid,text) to service_role;
 
 commit;
