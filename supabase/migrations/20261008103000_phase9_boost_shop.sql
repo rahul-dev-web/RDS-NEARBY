@@ -13,7 +13,7 @@ create table if not exists public.campaigns (
   target_radius_km numeric(6,2) not null default 5.00
     check (target_radius_km > 0 and target_radius_km <= 50),
   offer_id uuid,
-  idempotency_key text not null unique,
+  idempotency_key text,
   created_at timestamptz not null default now(),
   check (ends_at > starts_at),
   check (
@@ -22,6 +22,14 @@ create table if not exists public.campaigns (
     (campaign_type = 'PROMOTE_OFFER' and credit_cost = 100 and offer_id is not null)
   )
 );
+
+alter table public.campaigns
+  add column if not exists idempotency_key text,
+  add column if not exists created_at timestamptz not null default now();
+
+create unique index if not exists campaigns_idempotency_key_uidx
+  on public.campaigns(idempotency_key)
+  where idempotency_key is not null;
 
 create index if not exists campaigns_business_status_idx
   on public.campaigns(business_id, status, ends_at desc);
