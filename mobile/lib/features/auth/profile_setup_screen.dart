@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'auth_service.dart';
+import '../../core/referral_deep_link_service.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -14,7 +15,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>{
     if(name.text.trim().length<2){setState(()=>error='Enter your name.');return;}
     if(role==null){setState(()=>error='Choose Customer or Merchant.');return;}
     setState(()=>busy=true);
-    try{await auth.completeProfile(name:name.text);await auth.setInitialRole(role!);}
+    try{await auth.completeProfile(name:name.text);await auth.setInitialRole(role!);await ReferralDeepLinkService.instance.submitPendingReferral();}
     catch(e){if(mounted)setState(()=>error=e.toString());}finally{if(mounted)setState(()=>busy=false);}
   }
   @override Widget build(BuildContext context)=>Scaffold(
