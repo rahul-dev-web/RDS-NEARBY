@@ -26,7 +26,9 @@ class _MerchantReferralScreenState extends State<MerchantReferralScreen> {
 
   SupabaseClient get _client => Supabase.instance.client;
 
-  String get _referralUrl => 'https://rdsnearby.in/r/$_token';
+  String get _publicWebUrl => AppConfig.publicWebUrl.trim().replaceFirst(RegExp(r'/$'), '');
+
+  String get _referralUrl => '$_publicWebUrl/r/$_token';
 
   @override
   void initState() {
@@ -35,6 +37,16 @@ class _MerchantReferralScreenState extends State<MerchantReferralScreen> {
   }
 
   Future<void> _loadToken() async {
+    if (_publicWebUrl.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _error = 'Public web URL is not configured for referral QR.';
+          _loading = false;
+        });
+      }
+      return;
+    }
+
     try {
       final row = await _client
           .from('merchant_referral_tokens')
@@ -45,16 +57,23 @@ class _MerchantReferralScreenState extends State<MerchantReferralScreen> {
       if (!mounted) return;
       if (row == null || row['is_active'] != true) {
         setState(() {
-          _error = AppConfig.publicWebUrl.trim().isEmpty
-              ? 'Public web URL is not configured for referral QR.'
-              : 'Referral QR is not active for this business yet.';
+          _error = 'Referral QR is not active for this business yet.';
+          _loading = false;
+        });
+        return;
+      }
+
+      final token = row['token']?.toString().trim();
+      if (token == null || token.isEmpty) {
+        setState(() {
+          _error = 'Referral QR token is missing.';
           _loading = false;
         });
         return;
       }
 
       setState(() {
-        _token = row['token']?.toString();
+        _token = token;
         _loading = false;
       });
     } catch (_) {
@@ -107,7 +126,7 @@ class _MerchantReferralScreenState extends State<MerchantReferralScreen> {
                 trailing: IconButton(
                   onPressed: _loadToken,
                   icon: const Icon(Icons.refresh),
-                ),
+                  ),
               ),
             )
           else if (_token != null) ...[
