@@ -15,46 +15,41 @@ Public discovery reads only active/verified businesses and valid public content.
 
 ## Referral
 merchant_referral_tokens → referrals → referral_events
+customer_referral_tokens → referrals → referral_events
 
 Referral lifecycle: PENDING → QUALIFIED | REJECTED | EXPIRED.
-The merchant QR stores an opaque token, never a raw database identifier.
+Merchant/customer referral QR stores an opaque token, never a raw database identifier.
 
 ## Merchant credits
 businesses → merchant_wallets → merchant_credit_ledger
 
-Ledger transaction types: REFERRAL_REWARD, BOOST_SPEND, PROMOTE_OFFER_SPEND, ADMIN_ADJUSTMENT, REVERSAL.
-Balance maximum: 2,000. Credits do not expire.
-Every reward/spend mutation requires an idempotency key.
+Ledger types: REFERRAL_REWARD, BOOST_SPEND, PROMOTE_OFFER_SPEND, ADMIN_ADJUSTMENT, REVERSAL. Balance maximum: 2,000. Credits do not expire. Every reward/spend mutation requires an idempotency key.
 
 ## Customer points
+profiles → customer_referral_tokens
 profiles → customer_wallets → customer_points_ledger → redemptions
 
-Points are non-cash. Default value is 100 points = ₹10 reward value, subject to merchant-funded minimum-bill and maximum-discount rules.
+Phase 7 customer referral reward: +10 Local Points to the referring customer after the referred user qualifies. Points are non-cash. Default value is 100 points = ₹10 reward value, subject to merchant-funded redemption rules.
 
 ## Customer requests
 profiles (customer) → customer_requests → request_responses
 
-Request lifecycle: PENDING → ACCEPTED | DECLINED | EXPIRED | CANCELLED | COMPLETED.
-Requests expire at T+10 minutes unless acted upon.
-Merchant eligibility requires an active business and accepting_requests = true.
+Request lifecycle: PENDING → ACCEPTED | DECLINED | EXPIRED | CANCELLED | COMPLETED. Requests expire at T+10 minutes unless acted upon. Merchant eligibility requires an active business and accepting_requests = true.
 
 ## Notifications
 profiles → device_tokens / notification_preferences / notifications
 
-Push is an attention mechanism. customer_requests remains the source of truth.
-High priority flow: request_created → eligibility → notification → +3m reminder → +8m reminder → +10m expiry.
+Push is an attention mechanism. customer_requests remains the source of truth. High priority flow: request_created → eligibility → notification → +3m reminder → +8m reminder → +10m expiry.
 
 ## Promotions
 businesses → campaigns → optional offers
 
-Campaign types are frozen to BOOST_SHOP (50 credits / 24 hours) and PROMOTE_OFFER (100 credits / 3 days).
-Sponsored visibility is a ranking input, not an absolute first-position guarantee.
+Campaign types are frozen to BOOST_SHOP (50 credits / 24 hours) and PROMOTE_OFFER (100 credits / 3 days). Sponsored visibility is a ranking input, not an absolute first-position guarantee.
 
 ## Membership
 businesses → memberships
 
-Plans: BASIC ₹0 and GROWTH ₹99/month after pilot validation.
-Payment integration is deferred until the pilot proves merchant value.
+Plans: BASIC ₹0 and GROWTH ₹99/month after pilot validation. Payment integration is deferred until the pilot proves merchant value.
 
 ## Trust / audit
 profiles → fraud_flags
