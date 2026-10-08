@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -19,9 +21,12 @@ class MerchantCreditWalletScreen extends StatefulWidget {
 class _MerchantCreditWalletScreenState
     extends State<MerchantCreditWalletScreen> {
   bool _loading = true;
+  bool _creatingBoost = false;
   String? _error;
+  String? _boostMessage;
   int _balance = 0;
   List<Map<String, dynamic>> _ledger = [];
+  Map<String, dynamic>? _activeBoost;
 
   SupabaseClient get _client => Supabase.instance.client;
 
@@ -53,10 +58,25 @@ class _MerchantCreditWalletScreenState
           .order('created_at', ascending: false)
           .limit(50);
 
+      final campaigns = await _client
+          .from('campaigns')
+          .select(
+            'id,campaign_type,credit_cost,starts_at,ends_at,status,target_radius_km',
+          )
+          .eq('business_id', widget.businessId)
+          .eq('campaign_type', 'BOOST_SHOP')
+          .eq('status', 'ACTIVE')
+          .gt('ends_at', DateTime.now().toUtc().toIso8601String())
+          .order('ends_at', ascending: false)
+          .limit(1);
+
       if (!mounted) return;
       setState(() {
         _balance = (wallet?['balance'] as num?)?.toInt() ?? 0;
         _ledger = List<Map<String, dynamic>>.from(ledger);
+        _activeBoost = campaigns.isEmpty
+            ? null
+            : Map<String, dynamic>.from(campaigns.first);
         _loading = false;
       });
     } catch (_) {
@@ -64,6 +84,63 @@ class _MerchantCreditWalletScreenState
       setState(() {
         _error = 'Could not load Marketing Credits.';
         _loading = false;
+      });
+    }
+  }
+
+  Future<void> _boostShop() async {
+    if (_creatingBoost) return;
+
+    setState(() {
+      _creatingBoost = true;
+      _boostMessage = null;
+    });
+
+    final key =
+        'boost_${widget.businessId}_${DateTime.now().microsecondsSinceEpoch}_${Random.secure().nextInt(1 << 32)}';
+
+    try {
+      final response = await _client.functions.invoke(
+        'create-campaign',
+        body: {
+          'campaign_type': 'BOOST_SHOP',
+          'business_id': widget.businessId,
+          'idempotency_key': key,
+        },
+      );
+
+      final data = response.data;
+      if (data is Map && data['created'] == false) {
+        final reason = data['reason']?.toString();
+        if (reason == 'active_campaign_exists') {
+          _boostMessage = 'Boost Shop is already active for this business.';
+        } else {
+          _boostMessage = 'This Boost Shop request was already processed.';
+        }
+      } else {
+        _boostMessage = 'Boost Shop is active for the next 24 hours.';
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _creatingBoost = false;
+      });
+      await _loadWallet();
+    } on FunctionException catch (error) {
+      if (!mounted) return;
+      final details = error.details?.toString() ?? '';
+      final reason = details.contains('insufficient_marketing_credits')
+          ? 'You need at least 50 Marketing Credits.'
+          : 'Could not activate Boost Shop right now.';
+      setState(() {
+        _creatingBoost = false;
+        _boostMessage = reason;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _creatingBoost = false;
+        _boostMessage = 'Could not activate Boost Shop right now.';
       });
     }
   }
@@ -85,8 +162,20 @@ class _MerchantCreditWalletScreenState
     }
   }
 
+  String _formatEndsAt(String? value) {
+    if (value == null) return '';
+    final date = DateTime.tryParse(value)?.toLocal();
+    if (date == null) return '';
+    return 'Active until ${date.day}/${date.month}/${date.year} '
+        '${date.hour.toString().padLeft(2, '0')}:'
+        '${date.minute.toString().padLeft(2, '0')}';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final canBoost = !_loading && !_creatingBoost && _balance >= 50;
+    final active = _activeBoost != null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Marketing Credits'),
@@ -129,6 +218,79 @@ class _MerchantCreditWalletScreenState
                     const Text(
                       'Credits do not expire. Maximum balance: 2,000.',
                     ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.storefront_outlined),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Boost Shop',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Use 50 Marketing Credits to promote your shop for 24 hours.',
+                    ),
+                    const SizedBox(height: 14),
+                    if (active)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.check_circle_outline),
+                        title: const Text('Boost Shop is active'),
+                        subtitle: Text(_formatEndsAt(_activeBoost?['ends_at'])),
+                      )
+                    else
+                      FilledButton.icon(
+                        onPressed: canBoost ? _boostShop : null,
+                        icon: _creatingBoost
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.rocket_launch_outlined),
+                        label: Text(
+                          _creatingBoost
+                              ? 'Activating...'
+                              : 'Boost Shop · 50 credits',
+                        ),
+                      ),
+                    if (!active && _balance < 50 && !_loading)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Text(
+                          'Earn more Marketing Credits through qualified customer referrals.',
+                        ),
+                      ),
+                    if (_boostMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text(
+                          _boostMessage!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
