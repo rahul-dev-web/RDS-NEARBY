@@ -3,11 +3,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/app_config.dart';
 import 'core/app_logger.dart';
+import 'core/referral_deep_link_service.dart';
 import 'core/supabase_config.dart';
 import 'features/auth/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ReferralDeepLinkService.instance.initialize();
 
   final config = AppConfig.fromDefines();
   AppLogger.info('Starting RDS Nearby in ${config.environment.name}');
