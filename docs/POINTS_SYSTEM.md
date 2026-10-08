@@ -1,57 +1,47 @@
-# Local Points System
+# RDS Nearby — Local Points System
 
-## Economics
+## Purpose
 
-- 100 Local Points = ₹10 reward value.
-- Points are non-cash.
-- Cash withdrawal is not supported.
-- Merchant-funded redemption only.
-- Platform does not permanently subsidize discounts.
+Local Points are the customer-side, non-cash reward currency. They encourage genuine local discovery and referrals without creating a cash-withdrawal wallet.
 
-## Merchant controls
+## Canonical value
 
-Each business can configure:
-- Local Rewards: ON/OFF
-- Minimum bill
-- Maximum discount
+**100 Local Points = ₹10 reward value**
 
-A redemption must satisfy the merchant's active limits.
+Points do not represent cash and cannot be withdrawn.
 
-Example:
-- Bill = ₹400
-- Customer balance = 250 points
-- Nominal value = ₹25
-- Merchant maximum discount = ₹20
-- Maximum discount applied = ₹20
-- Customer pays = ₹380
+## Earning
 
-## Ledger
+Phase 7 starts with customer referral rewards:
+- 1 qualified customer referral = +10 Local Points to the referring customer.
+- Reward is issued only after the referred account passes the same 48-hour qualification flow used for merchant referrals.
+- Reward operations are server-owned and idempotent.
 
-customer_points_ledger is append-only from clients.
+Future earning source:
+- PURCHASE_REWARD may be added only when the corresponding merchant-funded purchase/reward flow is implemented.
 
-Transaction types:
-- REFERRAL_REWARD
-- PURCHASE_REWARD
-- POINT_REDEMPTION
-- REVERSAL
-- ADMIN_ADJUSTMENT
+## Wallet
 
-Every mutation requires an idempotency key.
+`customer_wallets` stores the current balance.
 
-## Redemption
+`customer_points_ledger` is append-only and records REFERRAL_REWARD, PURCHASE_REWARD, POINT_REDEMPTION, REVERSAL and ADMIN_ADJUSTMENT.
 
-redeem_points validates:
-1. authenticated customer
-2. active customer wallet
-3. active merchant reward configuration
-4. minimum bill
-5. maximum discount
-6. sufficient point balance
-7. idempotency key
+Clients can read their own wallet and ledger but cannot insert, update, delete or set balances.
 
-Then atomically:
-- deduct points
-- create redemption record
-- record ledger balance_after
+## Redemption economics
 
-Double spending must be impossible.
+Default value: 100 points = ₹10 reward value.
+
+Merchant controls Local Rewards ON/OFF, minimum bill and maximum discount.
+
+Example: Bill ₹400, customer has 250 points, merchant maximum discount ₹20 → maximum applied discount ₹20 → final bill ₹380.
+
+The platform does not permanently subsidize these discounts.
+
+## Security
+
+- Customer wallet is isolated from merchant Marketing Credits.
+- Every balance-changing operation uses an idempotency key.
+- Historical ledger entries are never edited to repair balances.
+- Redemption must be server-side and atomic.
+- No cash-out endpoint exists in V1.
