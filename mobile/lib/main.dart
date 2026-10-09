@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/app_config.dart';
 import 'core/app_logger.dart';
+import 'core/notification_service.dart';
 import 'core/referral_deep_link_service.dart';
 import 'core/supabase_config.dart';
 import 'features/auth/auth_gate.dart';
@@ -19,9 +20,13 @@ Future<void> main() async {
       url: supabaseUrl,
       anonKey: supabasePublishableKey,
     );
+    await NotificationService.instance.initialize(Supabase.instance.client);
   }
 
   runApp(RdsNearbyApp(config: config));
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    NotificationService.instance.flushPendingNavigation();
+  });
 }
 
 class RdsNearbyApp extends StatelessWidget {
@@ -39,6 +44,7 @@ class RdsNearbyApp extends StatelessWidget {
     }
 
     return MaterialApp(
+      navigatorKey: NotificationService.instance.navigatorKey,
       title: 'RDS Nearby',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
