@@ -21,7 +21,8 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
   bool _loading = false;
   String? _error;
   List<Map<String, dynamic>> _categories = [];
-  List<Map<String, dynamic>> _businesses = [];\n  List<Map<String, dynamic>> _offers = [];
+  List<Map<String, dynamic>> _businesses = [];
+  List<Map<String, dynamic>> _offers = [];
 
   SupabaseClient get _client => Supabase.instance.client;
   ReferralActivityService get _referralActivity => ReferralActivityService(_client);
@@ -67,7 +68,8 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
       }
 
       final rows = await request.order('is_open', ascending: false).limit(50);
-      var businesses = List<Map<String, dynamic>>.from(rows);\n      var offers = <Map<String, dynamic>>[];
+      var businesses = List<Map<String, dynamic>>.from(rows);
+      var offers = <Map<String, dynamic>>[];
       final now = DateTime.now().toUtc().toIso8601String();
       final boosts = await _client.from('campaigns')
           .select('business_id')
@@ -98,7 +100,8 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
       // Search matching active offers independently. Promote Offer labels the offer only,
       // never the entire merchant's business card.
       if (query.isNotEmpty) {
-        final pattern = '%${query.replaceAll(r'\\', r'\\\\').replaceAll('%', r'\\%').replaceAll('_', r'\\_')}%';
+        final offerEscaped = query.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
+        final pattern = '%$offerEscaped%';
         try {
           final offerRows = await _client.from('offers')
               .select('id,business_id,title,description,regular_price,offer_price,image_url,starts_at,ends_at,businesses(name,slug,address)')
@@ -215,8 +218,18 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
             ]),
             const SizedBox(height: 10),
             if (_error != null) Card(child: ListTile(leading: const Icon(Icons.error_outline), title: Text(_error!), trailing: TextButton(onPressed: _search, child: const Text('Retry')))),
-            if (!_loading && _error == null && _businesses.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('No matching shops yet. Try another search or category.'))),
-            ..._businesses.map((business) => _BusinessCard(business: business)),
+            if (!_loading && _error == null && _businesses.isEmpty && _offers.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('No matching shops or active offers yet. Try another search or category.'))),
+            if (_offers.isNotEmpty) ...[
+              Text('Matching offers', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              ..._offers.map((offer) => _OfferCard(offer: offer)),
+              const SizedBox(height: 8),
+            ],
+            if (_businesses.isNotEmpty) ...[
+              Text('Matching shops', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              ..._businesses.map((business) => _BusinessCard(business: business)),
+            ],
           ],
         ),
       ),
