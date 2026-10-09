@@ -28,3 +28,11 @@ The current Supabase project has no request/notification worker deployed yet, an
 - Run authenticated integration tests for create, cross-merchant response rejection, accept/decline, customer cancellation, and reminder cancellation before pilot use.
 
 - Flutter static analysis/build and Next.js production build have not been run in this environment; GitHub commits and successful SQL migration application do not establish app compile success.
+
+
+## Phase 13 progress — automatic expiry
+
+- Added `public.expire_stale_customer_requests()`, which transitions pending requests whose `expires_at` has passed to `expired`, then removes queued reminder notifications for non-pending requests.
+- Enabled `pg_cron` and registered active job `expire-stale-customer-requests` to run once per minute.
+- The job was verified in `cron.job`; a manual execution returned successfully with zero overdue requests in the database at verification time.
+- This is automatic expiry and reminder cleanup only. It does **not** deliver push notifications. The existing `device_tokens` table is present, but a verified FCM delivery implementation and credentials are not yet configured/validated.
