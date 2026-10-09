@@ -68,6 +68,32 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
 
       final rows = await request.order('is_open', ascending: false).limit(50);
       var businesses = List<Map<String, dynamic>>.from(rows);
+      final now = DateTime.now().toUtc().toIso8601String();
+      final boosts = await _client.from('campaigns')
+          .select('business_id')
+          .eq('campaign_type', 'boost_shop')
+          .eq('status', 'active')
+          .lte('starts_at', now)
+          .gt('ends_at', now);
+      final boostedIds = List<Map<String, dynamic>>.from(boosts)
+          .map((campaign) => campaign['business_id'].toString()).toSet();
+      final organic = businesses.where((business) => !boostedIds.contains(business['id'].toString())).toList();
+      final sponsored = businesses.where((business) => boostedIds.contains(business['id'].toString())).toList();
+      businesses = [];
+      var organicIndex = 0;
+      var sponsoredIndex = 0;
+      while (organicIndex < organic.length || sponsoredIndex < sponsored.length) {
+        for (var slot = 0; slot < 3 && organicIndex < organic.length; slot++) {
+          businesses.add(organic[organicIndex++]);
+        }
+        if (sponsoredIndex < sponsored.length) {
+          businesses.add(sponsored[sponsoredIndex++]);
+        }
+      }
+      businesses = businesses.map((business) => {
+        ...business,
+        'is_sponsored': boostedIds.contains(business['id'].toString()),
+      }).toList();
 
       if (_availableOnly) {
         final ids = businesses.map((row) => row['id'].toString()).toList();
@@ -206,6 +232,7 @@ class _BusinessCard extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(business['name']?.toString() ?? 'Business', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+              if (business['is_sponsored'] == true) const Text('SPONSORED', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800)),
               if (category != null) Text(category, style: Theme.of(context).textTheme.bodySmall),
             ])),
             Chip(label: Text(open ? 'Open' : 'Closed')),
