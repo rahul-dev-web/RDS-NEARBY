@@ -15,8 +15,8 @@
 
 1. In Firebase Console, enable Firebase Cloud Messaging for the Android/iOS app's Firebase project and create a service account with the least privilege required to send FCM messages.
 2. Add the full service-account JSON as Supabase Edge Function secret `FCM_SERVICE_ACCOUNT_JSON`. Do not commit the JSON, private key, or any service-role key.
-3. Ensure mobile clients register FCM tokens into `public.device_tokens`, refresh them when rotated, and deactivate tokens on sign-out as appropriate.
-4. Add a secure scheduled invocation (for example, `pg_cron` + `pg_net` + Supabase Vault) that POSTs to the deployed function every minute using the service-role bearer secret. Never hardcode the service-role key into a migration or repository.
+3. The current Flutter `pubspec.yaml` and app bootstrap do not yet include Firebase initialization or `firebase_messaging` token registration. Add the Firebase Android/iOS configuration, initialize Firebase, request notification permission, register/refresh FCM tokens in `public.device_tokens` using the authenticated user's session, and deactivate tokens on sign-out. Until this mobile work is complete, the worker will find no active device tokens for those users.
+4. Add a secure scheduled invocation (for example, `pg_cron` + `pg_net` + Supabase Vault) that POSTs to the deployed function every minute using the service-role bearer secret. In the current project, `pg_net` is not installed and `vault.secrets` is empty, so this scheduler is not yet configured. Never hardcode the service-role key into a migration or repository.
 5. Verify the app registers the Android notification channel `local_request` and routes the `deepLink` / `requestId` payload to the exact request screen. APNs configuration is separately required for iOS.
 6. Run a real-device test for T+0, T+3m, T+8m, accept/decline cancellation, expiry, no-token retry, invalid token deactivation, and user preference suppression.
 
