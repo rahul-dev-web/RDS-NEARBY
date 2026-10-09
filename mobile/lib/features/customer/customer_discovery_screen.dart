@@ -110,19 +110,27 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
               .gt('ends_at', now)
               .or('title.ilike.$pattern,description.ilike.$pattern')
               .limit(30);
-          final campaignRows = await _client.from('campaigns')
-              .select('offer_id')
-              .eq('campaign_type', 'promote_offer')
-              .eq('status', 'active')
-              .lte('starts_at', now)
-              .gt('ends_at', now)
-              .not('offer_id', 'is', null);
-          final promotedOfferIds = List<Map<String, dynamic>>.from(campaignRows)
-              .map((campaign) => campaign['offer_id'].toString()).toSet();
           offers = List<Map<String, dynamic>>.from(offerRows).map((offer) => {
             ...offer,
-            'is_sponsored': promotedOfferIds.contains(offer['id'].toString()),
+            'is_sponsored': false,
           }).toList();
+          try {
+            final campaignRows = await _client.from('campaigns')
+                .select('offer_id')
+                .eq('campaign_type', 'promote_offer')
+                .eq('status', 'active')
+                .lte('starts_at', now)
+                .gt('ends_at', now)
+                .not('offer_id', 'is', null);
+            final promotedOfferIds = List<Map<String, dynamic>>.from(campaignRows)
+                .map((campaign) => campaign['offer_id'].toString()).toSet();
+            offers = offers.map((offer) => {
+              ...offer,
+              'is_sponsored': promotedOfferIds.contains(offer['id'].toString()),
+            }).toList();
+          } catch (_) {
+            // Keep matching offers organic if campaign labels cannot be fetched.
+          }
         } catch (_) {
           // Offer search is supplementary; keep valid shop results available on partial failure.
         }
