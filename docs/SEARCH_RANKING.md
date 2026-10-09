@@ -71,7 +71,7 @@ Initial implementation should use PostgreSQL indexes and straightforward filteri
 
 ### Scope boundary
 
-Current business search only surfaces business cards. `promote_offer` campaign indexing is prepared, but promoted offer placement is not shown until discovery returns offer cards; we must not label an entire shop as sponsored merely because one of its offers is promoted.
+Search returns separate result types for shops, products, services, and offers. Boost Shop labels the matching business card; Promote Offer labels only the matching offer card. Product/service inventory remains organic and is constrained by existing public RLS.
 
 ### Acceptance checks
 
@@ -88,3 +88,12 @@ Current business search only surfaces business cards. `promote_offer` campaign i
 Search surfaces matching active offers by title/description as a separate result type in web and Flutter. Active `promote_offer` campaigns label only the corresponding offer card `SPONSORED`; they do not promote the whole business. If campaign-label lookup fails, the result remains visible organically. Existing RLS continues to gate public offers to active, time-valid offers from active, verified businesses.
 
 This is still search-first discovery. It does not implement the Phase 13 Today's Near You feed, geospatial distance ranking, or offer redemption.
+
+
+### Product and service inventory search
+
+- Query-matching active, available products are returned by name/description, with price, unit, and shop context.
+- Query-matching active, available services are returned by name/description, with price, duration, and provider context.
+- Existing public RLS on inventory tables limits results to active, verified businesses and prevents unavailable/inactive inventory from being publicly read.
+- Inventory results are supplementary: failures in these optional queries should not erase valid shop results.
+- Distance, price filters, offer filters, and geospatial ranking remain future work; this slice does not claim those ranking inputs are fully implemented.
