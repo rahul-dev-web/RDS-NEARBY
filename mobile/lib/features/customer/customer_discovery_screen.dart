@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -320,7 +319,7 @@ class _BusinessCard extends StatelessWidget {
           content: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               DropdownButtonFormField<String>(
-                value: requestType,
+                initialValue: requestType,
                 decoration: const InputDecoration(labelText: 'Request type'),
                 items: const [
                   DropdownMenuItem(value: 'availability', child: Text('Check availability')),
