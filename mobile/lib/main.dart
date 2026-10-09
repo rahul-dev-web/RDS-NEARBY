@@ -18,7 +18,7 @@ Future<void> main() async {
   if (config.hasBackendConfig) {
     await Supabase.initialize(
       url: supabaseUrl,
-      anonKey: supabasePublishableKey,
+      publishableKey: supabasePublishableKey,
     );
     await NotificationService.instance.initialize(Supabase.instance.client);
   }
