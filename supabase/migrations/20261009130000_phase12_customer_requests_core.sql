@@ -131,7 +131,7 @@ begin
     where related_entity_type = 'customer_request_reminder'
       and related_entity_id = v_request.id
       and status = 'queued'::public.notification_status;
-    raise exception 'Request has expired' using errcode = '57014';
+    return 'expired'::public.request_status;
   end if;
 
   v_response_status := case when p_decision = 'accept' then 'accepted'::public.request_status else 'declined'::public.request_status end;
