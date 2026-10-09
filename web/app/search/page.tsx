@@ -26,7 +26,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     const baseRanked = [...unique.values()]
       .sort((a, b) => Number(b.is_open) - Number(a.is_open))
       .slice(0, 50);
-    const { data: boosts, error: boostError } = await supabase
+    const { data: boosts } = await supabase
       .from('campaigns')
       .select('business_id')
       .eq('campaign_type', 'boost_shop')
