@@ -23,6 +23,8 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
   List<Map<String, dynamic>> _categories = [];
   List<Map<String, dynamic>> _businesses = [];
   List<Map<String, dynamic>> _offers = [];
+  List<Map<String, dynamic>> _products = [];
+  List<Map<String, dynamic>> _services = [];
 
   SupabaseClient get _client => Supabase.instance.client;
   ReferralActivityService get _referralActivity => ReferralActivityService(_client);
@@ -136,6 +138,33 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
         }
       }
 
+      var products = <Map<String, dynamic>>[];
+      var services = <Map<String, dynamic>>[];
+      if (query.isNotEmpty) {
+        final inventoryEscaped = query.replaceAll(r'\\', r'\\\\').replaceAll('%', r'\\%').replaceAll('_', r'\\_');
+        final inventoryPattern = '%$inventoryEscaped%';
+        try {
+          final rows = await _client.from('business_products')
+              .select('id,business_id,name,description,price,unit,businesses(name,slug,address)')
+              .eq('status', 'active').eq('is_available', true)
+              .or('name.ilike.$inventoryPattern,description.ilike.$inventoryPattern')
+              .limit(30);
+          products = List<Map<String, dynamic>>.from(rows);
+        } catch (_) {
+          // Product inventory is supplementary; shop and offer results remain usable.
+        }
+        try {
+          final rows = await _client.from('business_services')
+              .select('id,business_id,name,description,price,duration_minutes,businesses(name,slug,address)')
+              .eq('status', 'active').eq('is_available', true)
+              .or('name.ilike.$inventoryPattern,description.ilike.$inventoryPattern')
+              .limit(30);
+          services = List<Map<String, dynamic>>.from(rows);
+        } catch (_) {
+          // Service inventory is supplementary; shop and offer results remain usable.
+        }
+      }
+
       if (_availableOnly) {
         final ids = businesses.map((row) => row['id'].toString()).toList();
         if (ids.isNotEmpty) {
@@ -151,7 +180,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
         }
       }
 
-      if (mounted) setState(() { _businesses = businesses; _offers = offers; _loading = false; });
+      if (mounted) setState(() { _businesses = businesses; _offers = offers; _products = products; _services = services; _loading = false; });
       await _referralActivity.recordMeaningfulActivity('SEARCH');
     } catch (e) {
       if (mounted) setState(() { _error = 'Could not load nearby businesses.'; _loading = false; });
@@ -226,7 +255,19 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
             ]),
             const SizedBox(height: 10),
             if (_error != null) Card(child: ListTile(leading: const Icon(Icons.error_outline), title: Text(_error!), trailing: TextButton(onPressed: _search, child: const Text('Retry')))),
-            if (!_loading && _error == null && _businesses.isEmpty && _offers.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('No matching shops or active offers yet. Try another search or category.'))),
+            if (!_loading && _error == null && _businesses.isEmpty && _offers.isEmpty && _products.isEmpty && _services.isEmpty) const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('No matching shops or active offers yet. Try another search or category.'))),
+            if (_products.isNotEmpty) ...[
+              Text('Matching products', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              ..._products.map((product) => _InventoryCard(item: product, isService: false)),
+              const SizedBox(height: 8),
+            ],
+            if (_services.isNotEmpty) ...[
+              Text('Matching services', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              ..._services.map((service) => _InventoryCard(item: service, isService: true)),
+              const SizedBox(height: 8),
+            ],
             if (_offers.isNotEmpty) ...[
               Text('Matching offers', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
@@ -328,6 +369,53 @@ class _BusinessCard extends StatelessWidget {
   }
 }
 
+
+class _InventoryCard extends StatelessWidget {
+  const _InventoryCard({required this.item, required this.isService});
+
+  final Map<String, dynamic> item;
+  final bool isService;
+
+  @override
+  Widget build(BuildContext context) {
+    final business = item['businesses'] is Map
+        ? Map<String, dynamic>.from(item['businesses'] as Map)
+        : <String, dynamic>{};
+    final price = item['price'];
+    final unit = item['unit']?.toString();
+    final duration = item['duration_minutes'];
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.storefront_outlined),
+            const SizedBox(width: 8),
+            Expanded(child: Text(item['name']?.toString() ?? (isService ? 'Service' : 'Product'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+            Chip(label: Text(isService ? 'Service' : 'Product')),
+          ]),
+          if ((item['description']?.toString() ?? '').isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(item['description'].toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+          ],
+          const SizedBox(height: 8),
+          if (price != null || (isService && duration != null))
+            Wrap(spacing: 8, children: [
+              if (price != null) Text('₹' + price.toString() + (!isService && unit != null && unit.isNotEmpty ? ' / ' + unit : ''), style: const TextStyle(fontWeight: FontWeight.w800)),
+              if (isService && duration != null) Text(duration.toString() + ' min', style: Theme.of(context).textTheme.bodySmall),
+            ])
+          else
+            const Text('Ask shop for price'),
+          const SizedBox(height: 6),
+          Text(business['name']?.toString() ?? 'Local business', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+          if ((business['address']?.toString() ?? '').isNotEmpty)
+            Text(business['address'].toString(), maxLines: 1, overflow: TextOverflow.ellipsis),
+        ]),
+      ),
+    );
+  }
+}
 
 class _OfferCard extends StatelessWidget {
   const _OfferCard({required this.offer});
