@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'auth_service.dart';
+import '../../core/notification_service.dart';
 import 'phone_auth_screen.dart';
 import 'profile_setup_screen.dart';
 import '../merchant/merchant_onboarding_screen.dart';
@@ -66,7 +67,7 @@ class MerchantHomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Merchant'),
         actions: [
-          IconButton(onPressed: () => client.auth.signOut(), icon: const Icon(Icons.logout)),
+          IconButton(onPressed: () async { await NotificationService.instance.unregisterCurrentDevice(); await client.auth.signOut(); }, icon: const Icon(Icons.logout)),
         ],
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -155,7 +156,7 @@ class ModeHomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        actions: [IconButton(onPressed: () => client.auth.signOut(), icon: const Icon(Icons.logout))],
+        actions: [IconButton(onPressed: () async { await NotificationService.instance.unregisterCurrentDevice(); await client.auth.signOut(); }, icon: const Icon(Icons.logout))],
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
