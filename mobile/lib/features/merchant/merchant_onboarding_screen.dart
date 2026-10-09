@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'auth_service.dart';
+import '../auth/auth_service.dart';
 
 class MerchantOnboardingScreen extends StatefulWidget {
   const MerchantOnboardingScreen({super.key});
