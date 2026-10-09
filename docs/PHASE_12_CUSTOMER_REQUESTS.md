@@ -12,13 +12,14 @@
 - New request expires after 10 minutes and queues a high-priority notification plus 3m/8m reminder notifications.
 - `respond_customer_request` allows only the owning merchant to accept/decline a pending, unexpired request. It writes a response, transitions request state, notifies the customer, and clears queued reminders.
 - `cancel_customer_request` lets only the requesting customer cancel their own pending request.
-- Public web shop pages now show an authenticated Customer Request form when the merchant has enabled `accepting_requests`.
+- Public web shop pages now show a Customer Request form when the merchant has enabled `accepting_requests`; submitting it requires an existing authenticated Supabase web session.
+- Flutter customer discovery cards now expose a request dialog for businesses that are accepting requests.
 - Flutter merchant menu now includes a Customer Requests inbox with pending requests and Accept/Decline actions.
 - Direct authenticated insert/update/delete on request tables is revoked; state changes use ownership-checked RPCs.
 - Existing read policies are retained for customer/merchant request visibility and customer response visibility.
 
 ## Important integration note
-The current Supabase project has no request/notification worker deployed yet. The 3m/8m reminders are queued in `notifications.scheduled_at`; Phase 13 must deliver due notifications and re-check that the related request is still pending and unexpired immediately before sending. Request expiry is also enforced when a merchant attempts to respond. A scheduled worker should mark remaining pending requests expired at 10m. This slice does not claim push delivery is already live.
+The current Supabase project has no request/notification worker deployed yet, and no web sign-in UI was confirmed in this slice. The 3m/8m reminders are queued in `notifications.scheduled_at`; Phase 13 must deliver due notifications and re-check that the related request is still pending and unexpired immediately before sending. Request expiry is also enforced when a merchant attempts to respond. A scheduled worker should mark remaining pending requests expired at 10m. This slice does not claim push delivery is already live.
 
 ## Validation
 - Schema and RLS policies were inspected against the live RDS STUDIO ACCOUNT database before writing the migration.
