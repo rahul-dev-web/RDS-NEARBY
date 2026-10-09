@@ -7,6 +7,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   let businesses: any[] = [];
+  let offers: any[] = [];
   let error = false;
   if (url && key && query) {
     const supabase = createClient(url, key);
@@ -32,8 +33,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       .eq('status', 'active')
       .lte('starts_at', new Date().toISOString())
       .gt('ends_at', new Date().toISOString());
-    if (boostError) error = true;
-    const boostedIds = new Set((boosts ?? []).map((campaign: any) => campaign.business_id));
+    // If campaign lookup is temporarily unavailable, keep organic discovery usable.\n    const boostedIds = new Set((boosts ?? []).map((campaign: any) => campaign.business_id));
     const organic = baseRanked.filter((business) => !boostedIds.has(business.id));
     const sponsored = baseRanked.filter((business) => boostedIds.has(business.id));
     // Moderate sponsored signal: at most one sponsored result per four slots.
@@ -43,11 +43,40 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       if (sponsored.length) businesses.push(sponsored.shift());
     }
     businesses = businesses.map((business) => ({ ...business, is_sponsored: boostedIds.has(business.id) }));
+
+    // Offers are independent search results: Promote Offer must never mark the whole shop sponsored.
+    const [offerResult, offerCampaignResult] = await Promise.all([
+      supabase.from('offers')
+        .select('id,business_id,title,description,regular_price,offer_price,image_url,starts_at,ends_at,businesses(name,slug,address)')
+        .eq('status', 'active')
+        .lte('starts_at', new Date().toISOString())
+        .gt('ends_at', new Date().toISOString())
+        .or(`title.ilike.${pattern},description.ilike.${pattern}`)
+        .limit(30),
+      supabase.from('campaigns')
+        .select('offer_id')
+        .eq('campaign_type', 'promote_offer')
+        .eq('status', 'active')
+        .lte('starts_at', new Date().toISOString())
+        .gt('ends_at', new Date().toISOString())
+        .not('offer_id', 'is', null),
+    ]);
+    // Offers are optional supplementary results; don't blank valid shop results if this query fails.
+    const promotedOfferIds = new Set(
+      (offerCampaignResult.data ?? []).map((campaign: any) => campaign.offer_id).filter(Boolean),
+    );
+    offers = (offerResult.data ?? []).map((offer: any) => ({
+      ...offer,
+      is_sponsored: promotedOfferIds.has(offer.id),
+    }));
   }
   return <main className="container section">
     <span className="eyebrow">SEARCH</span><h1 className="searchTitle">{query ? <>Results for “{query}”</> : 'Search nearby businesses'}</h1>
     <form className="searchBox" action="/search"><span>⌕</span><input name="q" defaultValue={query} placeholder="A4 sheet, tomato, haircut..."/><button>Search</button></form>
     <div style={{height:24}} />
-    {!query ? <div className="notice">Start with a need — product, service or shop name.</div> : error ? <div className="notice">Search is temporarily unavailable.</div> : businesses.length === 0 ? <div className="notice">No verified nearby business matched that search yet.</div> : <div className="businessGrid">{businesses.map((b:any)=><Link className="businessCard" key={b.id} href={`/shop/${b.slug}`}><div className="businessTop"><span className={b.is_open?'status open':'status'}>{b.is_open?'Open':'Closed'}</span>{b.is_sponsored&&<span className="requestStatus">SPONSORED</span>}{b.accepting_requests&&<span className="requestStatus">Accepting Requests</span>}</div><h3>{b.name}</h3><p>{b.categories?.name ?? 'Local business'}</p><small>{b.address ?? 'Nearby'}</small></Link>)}</div>}
+    {!query ? <div className="notice">Start with a need — product, service or shop name.</div> : error ? <div className="notice">Search is temporarily unavailable.</div> : businesses.length === 0 && offers.length === 0 ? <div className="notice">No verified shop or active offer matched that search yet.</div> : <>
+      {offers.length > 0 && <><h2>Matching offers</h2><div className="businessGrid">{offers.map((offer:any)=><Link className="businessCard" key={offer.id} href={offer.businesses?.slug ? `/shop/${offer.businesses.slug}` : '/search'}><div className="businessTop"><span className="status open">Offer</span>{offer.is_sponsored&&<span className="requestStatus">SPONSORED</span>}</div><h3>{offer.title}</h3><p>{offer.description ?? ''}</p><p>{offer.offer_price != null ? <>₹{offer.offer_price}{offer.regular_price != null && <small> · <s>₹{offer.regular_price}</s></small>}</> : 'Ask shop for price'}</p><small>{offer.businesses?.name ?? 'Local shop'} · {offer.businesses?.address ?? 'Nearby'}</small></Link>)}</div></>}
+      {businesses.length > 0 && <><h2>Matching shops</h2><div className="businessGrid">{businesses.map((b:any)=><Link className="businessCard" key={b.id} href={`/shop/${b.slug}`}><div className="businessTop"><span className={b.is_open?'status open':'status'}>{b.is_open?'Open':'Closed'}</span>{b.is_sponsored&&<span className="requestStatus">SPONSORED</span>}{b.accepting_requests&&<span className="requestStatus">Accepting Requests</span>}</div><h3>{b.name}</h3><p>{b.categories?.name ?? 'Local business'}</p><small>{b.address ?? 'Nearby'}</small></Link>)}</div></>}
+    </>}
   </main>;
 }
