@@ -23,7 +23,7 @@
 
 ## Current limitation
 
-The worker and Flutter registration/routing code are deployed, but **push delivery is not yet live** because Firebase platform configuration and `FCM_SERVICE_ACCOUNT_JSON` have not been verified/configured, the secure scheduled invocation is not installed, and the native Android notification channel/iOS APNs setup is outstanding. Do not describe this phase as end-to-end complete until these steps and real-device tests pass.
+The worker and Flutter registration/routing code are deployed, but **push delivery is not yet live**: the live database currently has 0 registered device tokens, Firebase platform configuration and `FCM_SERVICE_ACCOUNT_JSON` have not been configured, the secure scheduled invocation is not installed, and native Android notification-channel/iOS APNs setup is outstanding. Do not describe this phase as end-to-end complete until these steps and real-device tests pass.
 
 ## Security and validation notes
 
