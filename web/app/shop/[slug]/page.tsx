@@ -1,8 +1,43 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createClient } from '../../../lib/supabase/server';
 
 type Params = { slug: string };
+
+async function submitCustomerRequest(formData: FormData) {
+  'use server';
+
+  const businessId = String(formData.get('business_id') ?? '');
+  const slug = String(formData.get('slug') ?? '');
+  const requestType = String(formData.get('request_type') ?? '');
+  const title = String(formData.get('title') ?? '').trim();
+  const description = String(formData.get('description') ?? '').trim();
+  const safeSlug = /^[a-z0-9-]+$/.test(slug) ? slug : '';
+
+  if (!safeSlug) redirect('/search?request=failed');
+  if (!['contact', 'reserve', 'availability'].includes(requestType) || !title || title.length > 120 || description.length > 1000) {
+    redirect(`/shop/${safeSlug}?request=invalid`);
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect(`/shop/${safeSlug}?request=login_required`);
+
+  const { error } = await supabase.rpc('create_customer_request', {
+    p_business_id: businessId,
+    p_request_type: requestType,
+    p_title: title,
+    p_description: description || null,
+  });
+
+  if (error) {
+    const code = error.code === '42501' ? 'not_allowed' : error.code === 'P0002' ? 'not_accepting' : 'failed';
+    redirect(`/shop/${safeSlug}?request=${code}`);
+  }
+
+  redirect(`/shop/${safeSlug}?request=sent`);
+}
+
 
 async function getBusiness(slug: string) {
   const supabase = await createClient();
@@ -47,10 +82,13 @@ export async function generateMetadata({
 
 export default async function ShopPage({
   params,
+  searchParams,
 }: {
   params: Promise<Params>;
+  searchParams: Promise<{ request?: string }>;
 }) {
   const { slug } = await params;
+  const { request: requestState } = await searchParams;
   const business = await getBusiness(slug);
 
   if (!business) notFound();
@@ -127,6 +165,45 @@ export default async function ShopPage({
             <p className="muted">Business hours are managed by the merchant.</p>
           </div>
         </section>
+
+        {requestState && (
+          <div role="status" className="card" style={{ marginTop: 16, borderColor: requestState === 'sent' ? '#16a34a' : '#d97706' }}>
+            {requestState === 'sent' && 'Request sent. The shop has up to 10 minutes to respond.'}
+            {requestState === 'login_required' && 'Sign in to send a Customer Request. Your request has not been sent.'}
+            {requestState === 'not_accepting' && 'This shop is not accepting requests right now.'}
+            {requestState === 'not_allowed' && 'You cannot send a request to this business from this account.'}
+            {requestState === 'invalid' && 'Check the request type and make sure the title and description are within the allowed length.'}
+            {requestState === 'failed' && 'The request could not be sent. Please try again.'}
+          </div>
+        )}
+
+        {business.accepting_requests && (
+          <section className="card" style={{ marginTop: 24 }}>
+            <h2 style={{ marginTop: 0 }}>Send a Customer Request</h2>
+            <p className="muted">Ask about availability, contact the shop, or request a reservation. The request expires after 10 minutes if the shop does not respond.</p>
+            <form action={submitCustomerRequest} style={{ display: 'grid', gap: 12, maxWidth: 640 }}>
+              <input type="hidden" name="business_id" value={business.id} />
+              <input type="hidden" name="slug" value={business.slug} />
+              <label style={{ display: 'grid', gap: 6 }}>
+                Request type
+                <select name="request_type" required defaultValue="availability" className="input">
+                  <option value="availability">Check availability</option>
+                  <option value="contact">Contact the shop</option>
+                  <option value="reserve">Reservation request</option>
+                </select>
+              </label>
+              <label style={{ display: 'grid', gap: 6 }}>
+                What do you need?
+                <input name="title" required maxLength={120} placeholder="e.g. Is this product available today?" className="input" />
+              </label>
+              <label style={{ display: 'grid', gap: 6 }}>
+                Details (optional)
+                <textarea name="description" maxLength={1000} rows={3} placeholder="Add quantity, preferred time, or other details." className="input" />
+              </label>
+              <button type="submit" className="badge" style={{ cursor: 'pointer', width: 'fit-content' }}>Send request</button>
+            </form>
+          </section>
+        )}
 
         {offers.length > 0 && (
           <section style={{ marginTop: 28 }}>
