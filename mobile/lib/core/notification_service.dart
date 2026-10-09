@@ -157,8 +157,8 @@ class NotificationService {
   }
 
   void _handleForegroundMessage(RemoteMessage message) {
-    final requestId = message.data['requestId']?.toString();
-    if (requestId == null || !_isUuid(requestId)) return;
+    final requestId = NotificationPayload.requestIdFrom(message.data);
+    if (requestId == null) return;
     final context = navigatorKey.currentContext;
     if (context == null) {
       _pendingRequestId = requestId;
