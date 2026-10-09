@@ -307,6 +307,80 @@ class _BusinessCard extends StatelessWidget {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failureMessage)));
     }
   }
+
+  Future<void> _sendCustomerRequest(BuildContext context) async {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    var requestType = 'availability';
+    final form = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Send a Customer Request'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              DropdownButtonFormField<String>(
+                value: requestType,
+                decoration: const InputDecoration(labelText: 'Request type'),
+                items: const [
+                  DropdownMenuItem(value: 'availability', child: Text('Check availability')),
+                  DropdownMenuItem(value: 'contact', child: Text('Contact the shop')),
+                  DropdownMenuItem(value: 'reserve', child: Text('Reservation request')),
+                ],
+                onChanged: (value) { if (value != null) setDialogState(() => requestType = value); },
+              ),
+              TextField(
+                controller: titleController,
+                maxLength: 120,
+                decoration: const InputDecoration(labelText: 'What do you need?', hintText: 'e.g. Is this available today?'),
+              ),
+              TextField(
+                controller: descriptionController,
+                maxLength: 1000,
+                maxLines: 3,
+                decoration: const InputDecoration(labelText: 'Details (optional)'),
+              ),
+              const SizedBox(height: 8),
+              const Text('The request expires after 10 minutes if the shop does not respond.'),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                final title = titleController.text.trim();
+                if (title.isEmpty) return;
+                Navigator.pop(dialogContext, {
+                  'request_type': requestType,
+                  'title': title,
+                  'description': descriptionController.text.trim(),
+                });
+              },
+              child: const Text('Send request'),
+            ),
+          ],
+        ),
+      ),
+    );
+    titleController.dispose();
+    descriptionController.dispose();
+    if (form == null || !context.mounted) return;
+
+    try {
+      await Supabase.instance.client.rpc('create_customer_request', params: {
+        'p_business_id': business['id'].toString(),
+        'p_request_type': form['request_type'],
+        'p_title': form['title'],
+        'p_description': (form['description'] ?? '').isEmpty ? null : form['description'],
+      });
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request sent. The shop has up to 10 minutes to respond.')));
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request could not be sent. The shop may no longer be accepting requests.')));
+    }
+  }
+
   final Map<String, dynamic> business;
 
   @override
@@ -359,8 +433,14 @@ class _BusinessCard extends StatelessWidget {
                   icon: const Icon(Icons.directions, size: 17),
                   label: const Text('Directions'),
                 ),
-              if (accepting)
+              if (accepting) ...[
                 const Chip(label: Text('Accepting Requests'), avatar: Icon(Icons.check_circle_outline, size: 16)),
+                OutlinedButton.icon(
+                  onPressed: () => _sendCustomerRequest(context),
+                  icon: const Icon(Icons.mark_chat_unread_outlined, size: 17),
+                  label: const Text('Request'),
+                ),
+              ],
             ],
           ),
         ]),
