@@ -84,6 +84,7 @@ class NotificationService {
           state.event == AuthChangeEvent.tokenRefreshed ||
           state.event == AuthChangeEvent.userUpdated) {
         unawaited(_registerCurrentToken());
+        unawaited(flushPendingNavigation());
       }
     });
 
