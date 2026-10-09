@@ -10,6 +10,7 @@ import '../merchant/merchant_settings_screen.dart';
 import '../merchant/merchant_referral_screen.dart';
 import '../merchant/merchant_credit_wallet_screen.dart';
 import '../merchant/merchant_offers_screen.dart';
+import '../merchant/merchant_requests_screen.dart';
 import '../customer/customer_discovery_screen.dart';
 
 class AuthGate extends StatelessWidget {
@@ -115,8 +116,9 @@ class MerchantHomeScreen extends StatelessWidget {
                       if (value == 'settings') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantSettingsScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business')));
                       if (value == 'referral') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantReferralScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business')));
                       if (value == 'credits') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantCreditWalletScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business')));
-                      if (value == 'offers') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantOffersScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business'))); },
-                    itemBuilder: (_) => const [PopupMenuItem(value: 'catalog', child: Text('Products & Services')), PopupMenuItem(value: 'referral', child: Text('Invite Customers')), PopupMenuItem(value: 'credits', child: Text('Marketing Credits')), PopupMenuItem(value: 'offers', child: Text('Offers & Promotions')), PopupMenuItem(value: 'settings', child: Text('Business Settings'))],
+                      if (value == 'offers') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantOffersScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business')));
+                      if (value == 'requests') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantRequestsScreen(businessId: business['id'].toString(), businessName: business['name']?.toString() ?? 'Business'))); },
+                    itemBuilder: (_) => const [PopupMenuItem(value: 'catalog', child: Text('Products & Services')), PopupMenuItem(value: 'referral', child: Text('Invite Customers')), PopupMenuItem(value: 'credits', child: Text('Marketing Credits')), PopupMenuItem(value: 'offers', child: Text('Offers & Promotions')), PopupMenuItem(value: 'requests', child: Text('Customer Requests')), PopupMenuItem(value: 'settings', child: Text('Business Settings'))],
                   ),
                   subtitle: Text(
                     (business['status']?.toString() ?? 'pending') +
