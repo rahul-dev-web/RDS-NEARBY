@@ -6,10 +6,12 @@ class MerchantRequestsScreen extends StatefulWidget {
     super.key,
     required this.businessId,
     required this.businessName,
+    this.initialRequestId,
   });
 
   final String businessId;
   final String businessName;
+  final String? initialRequestId;
 
   @override
   State<MerchantRequestsScreen> createState() => _MerchantRequestsScreenState();
@@ -21,6 +23,7 @@ class _MerchantRequestsScreenState extends State<MerchantRequestsScreen> {
   String? _error;
   List<Map<String, dynamic>> _requests = <Map<String, dynamic>>[];
   final Set<String> _busyIds = <String>{};
+  bool _initialRequestHandled = false;
 
   @override
   void initState() {
@@ -42,10 +45,74 @@ class _MerchantRequestsScreenState extends State<MerchantRequestsScreen> {
         _requests = List<Map<String, dynamic>>.from(rows);
         _loading = false;
       });
+      _showInitialRequestIfPresent();
     } catch (error) {
       if (!mounted) return;
       setState(() { _error = 'Could not load requests. Check your connection and business access.'; _loading = false; });
     }
+  }
+
+  void _showInitialRequestIfPresent() {
+    final targetId = widget.initialRequestId;
+    if (_initialRequestHandled || targetId == null) return;
+
+    Map<String, dynamic>? target;
+    for (final request in _requests) {
+      if (request['id']?.toString() == targetId) {
+        target = request;
+        break;
+      }
+    }
+    if (target == null) return;
+
+    _initialRequestHandled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final request = target!;
+      final description = request['description']?.toString() ?? '';
+      final status = request['status']?.toString() ?? 'pending';
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(request['title']?.toString() ?? 'Customer Request'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Status: ${status.toUpperCase()}'),
+                if (description.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(description),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+            if (status == 'pending') ...[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  _respond(request, 'decline');
+                },
+                child: const Text('Decline'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.of(dialogContext).pop();
+                  _respond(request, 'accept');
+                },
+                child: const Text('Accept'),
+              ),
+            ],
+          ],
+        ),
+      );
+    });
   }
 
   Future<void> _respond(Map<String, dynamic> request, String decision) async {
