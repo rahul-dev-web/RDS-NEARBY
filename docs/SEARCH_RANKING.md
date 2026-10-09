@@ -81,3 +81,10 @@ Current business search only surfaces business cards. `promote_offer` campaign i
 4. Expired or future campaigns do not influence ranking.
 5. Sponsored campaigns do not add businesses that failed the original query or public-discovery eligibility filters.
 6. Promote Offer is only used to rank an offer card, not a generic business card.
+
+
+### Phase 11 follow-up — offer-specific discovery
+
+Search surfaces matching active offers by title/description as a separate result type in web and Flutter. Active `promote_offer` campaigns label only the corresponding offer card `SPONSORED`; they do not promote the whole business. If campaign-label lookup fails, the result remains visible organically. Existing RLS continues to gate public offers to active, time-valid offers from active, verified businesses.
+
+This is still search-first discovery. It does not implement the Phase 13 Today's Near You feed, geospatial distance ranking, or offer redemption.
