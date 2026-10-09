@@ -82,8 +82,12 @@ class NotificationService {
       }());
     });
 
-    final initialMessage = await messaging.getInitialMessage();
-    if (initialMessage != null) _handleMessageTap(initialMessage);
+    try {
+      final initialMessage = await messaging.getInitialMessage();
+      if (initialMessage != null) _handleMessageTap(initialMessage);
+    } catch (error) {
+      debugPrint('FCM initial notification could not be read: $error');
+    }
 
     _authSubscription = client.auth.onAuthStateChange.listen((state) {
       if (state.event == AuthChangeEvent.signedIn ||
