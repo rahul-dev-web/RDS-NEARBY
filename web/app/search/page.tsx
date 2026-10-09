@@ -33,7 +33,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       .eq('status', 'active')
       .lte('starts_at', new Date().toISOString())
       .gt('ends_at', new Date().toISOString());
-    // If campaign lookup is temporarily unavailable, keep organic discovery usable.\n    const boostedIds = new Set((boosts ?? []).map((campaign: any) => campaign.business_id));
+    // If campaign lookup is temporarily unavailable, keep organic discovery usable.
+    const boostedIds = new Set((boosts ?? []).map((campaign: any) => campaign.business_id));
     const organic = baseRanked.filter((business) => !boostedIds.has(business.id));
     const sponsored = baseRanked.filter((business) => boostedIds.has(business.id));
     // Moderate sponsored signal: at most one sponsored result per four slots.
