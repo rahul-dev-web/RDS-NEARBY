@@ -109,7 +109,7 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
         Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, true), child: Text(_formatTime(_open[day.key] ?? const TimeOfDay(hour: 9, minute: 0))))),
         Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, false), child: Text(_formatTime(_close[day.key] ?? const TimeOfDay(hour: 18, minute: 0))))),
         Checkbox(value: _closedDays.contains(day.key), onChanged: (v) => setState(() { if (v == true) { _closedDays.add(day.key); } else { _closedDays.remove(day.key); } })),
-      ]))),
+      ])))),
       const SizedBox(height: 8),
       const Text('Tick Closed for a weekly holiday.', style: TextStyle(fontSize: 12)),
       const Divider(height: 28),
