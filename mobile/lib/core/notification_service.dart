@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../features/merchant/merchant_requests_screen.dart';
+import 'notification_payload.dart';
 
 class NotificationService {
   NotificationService._();
@@ -149,8 +150,8 @@ class NotificationService {
   }
 
   void _handleMessageTap(RemoteMessage message) {
-    final requestId = message.data['requestId']?.toString();
-    if (requestId == null || !_isUuid(requestId)) return;
+    final requestId = NotificationPayload.requestIdFrom(message.data);
+    if (requestId == null) return;
     _pendingRequestId = requestId;
     unawaited(flushPendingNavigation());
   }
@@ -176,10 +177,6 @@ class NotificationService {
       ),
     );
   }
-
-  bool _isUuid(String value) => RegExp(
-        r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
-      ).hasMatch(value);
 
   Future<void> flushPendingNavigation() async {
     final requestId = _pendingRequestId;
