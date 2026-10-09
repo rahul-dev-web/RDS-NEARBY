@@ -21,7 +21,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
   bool _loading = false;
   String? _error;
   List<Map<String, dynamic>> _categories = [];
-  List<Map<String, dynamic>> _businesses = [];
+  List<Map<String, dynamic>> _businesses = [];\n  List<Map<String, dynamic>> _offers = [];
 
   SupabaseClient get _client => Supabase.instance.client;
   ReferralActivityService get _referralActivity => ReferralActivityService(_client);
@@ -67,7 +67,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
       }
 
       final rows = await request.order('is_open', ascending: false).limit(50);
-      var businesses = List<Map<String, dynamic>>.from(rows);
+      var businesses = List<Map<String, dynamic>>.from(rows);\n      var offers = <Map<String, dynamic>>[];
       final now = DateTime.now().toUtc().toIso8601String();
       final boosts = await _client.from('campaigns')
           .select('business_id')
@@ -95,6 +95,36 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
         'is_sponsored': boostedIds.contains(business['id'].toString()),
       }).toList();
 
+      // Search matching active offers independently. Promote Offer labels the offer only,
+      // never the entire merchant's business card.
+      if (query.isNotEmpty) {
+        final pattern = '%${query.replaceAll(r'\\', r'\\\\').replaceAll('%', r'\\%').replaceAll('_', r'\\_')}%';
+        try {
+          final offerRows = await _client.from('offers')
+              .select('id,business_id,title,description,regular_price,offer_price,image_url,starts_at,ends_at,businesses(name,slug,address)')
+              .eq('status', 'active')
+              .lte('starts_at', now)
+              .gt('ends_at', now)
+              .or('title.ilike.$pattern,description.ilike.$pattern')
+              .limit(30);
+          final campaignRows = await _client.from('campaigns')
+              .select('offer_id')
+              .eq('campaign_type', 'promote_offer')
+              .eq('status', 'active')
+              .lte('starts_at', now)
+              .gt('ends_at', now)
+              .not('offer_id', 'is', null);
+          final promotedOfferIds = List<Map<String, dynamic>>.from(campaignRows)
+              .map((campaign) => campaign['offer_id'].toString()).toSet();
+          offers = List<Map<String, dynamic>>.from(offerRows).map((offer) => {
+            ...offer,
+            'is_sponsored': promotedOfferIds.contains(offer['id'].toString()),
+          }).toList();
+        } catch (_) {
+          // Offer search is supplementary; keep valid shop results available on partial failure.
+        }
+      }
+
       if (_availableOnly) {
         final ids = businesses.map((row) => row['id'].toString()).toList();
         if (ids.isNotEmpty) {
@@ -110,7 +140,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
         }
       }
 
-      if (mounted) setState(() { _businesses = businesses; _loading = false; });
+      if (mounted) setState(() { _businesses = businesses; _offers = offers; _loading = false; });
       await _referralActivity.recordMeaningfulActivity('SEARCH');
     } catch (e) {
       if (mounted) setState(() { _error = 'Could not load nearby businesses.'; _loading = false; });
@@ -271,6 +301,54 @@ class _BusinessCard extends StatelessWidget {
                 const Chip(label: Text('Accepting Requests'), avatar: Icon(Icons.check_circle_outline, size: 16)),
             ],
           ),
+        ]),
+      ),
+    );
+  }
+}
+
+
+class _OfferCard extends StatelessWidget {
+  const _OfferCard({required this.offer});
+
+  final Map<String, dynamic> offer;
+
+  @override
+  Widget build(BuildContext context) {
+    final business = offer['businesses'] is Map
+        ? Map<String, dynamic>.from(offer['businesses'] as Map)
+        : <String, dynamic>{};
+    final offerPrice = offer['offer_price'];
+    final regularPrice = offer['regular_price'];
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            const Icon(Icons.local_offer_outlined),
+            const SizedBox(width: 8),
+            Expanded(child: Text(offer['title']?.toString() ?? 'Offer', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+            if (offer['is_sponsored'] == true)
+              const Chip(label: Text('SPONSORED', style: TextStyle(fontSize: 10))),
+          ]),
+          if ((offer['description']?.toString() ?? '').isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(offer['description'].toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+          ],
+          const SizedBox(height: 8),
+          if (offerPrice != null)
+            Row(children: [
+              Text('₹$offerPrice', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              if (regularPrice != null) ...[
+                const SizedBox(width: 8),
+                Text('₹$regularPrice', style: const TextStyle(decoration: TextDecoration.lineThrough)),
+              ],
+            ]),
+          const SizedBox(height: 6),
+          Text(business['name']?.toString() ?? 'Local shop', style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+          if ((business['address']?.toString() ?? '').isNotEmpty)
+            Text(business['address'].toString(), maxLines: 1, overflow: TextOverflow.ellipsis),
         ]),
       ),
     );
