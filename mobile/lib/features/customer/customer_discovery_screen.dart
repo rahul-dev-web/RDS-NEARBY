@@ -141,7 +141,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
       var products = <Map<String, dynamic>>[];
       var services = <Map<String, dynamic>>[];
       if (query.isNotEmpty) {
-        final inventoryEscaped = query.replaceAll(r'\\', r'\\\\').replaceAll('%', r'\\%').replaceAll('_', r'\\_');
+        final inventoryEscaped = query.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
         final inventoryPattern = '%$inventoryEscaped%';
         try {
           final rows = await _client.from('business_products')
