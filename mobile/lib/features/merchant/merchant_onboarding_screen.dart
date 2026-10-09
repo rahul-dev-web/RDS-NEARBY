@@ -128,7 +128,7 @@ class _MerchantOnboardingScreenState extends State<MerchantOnboardingScreen> {
                   ),
                   const SizedBox(height: 14),
                   DropdownButtonFormField<String>(
-                    value: _categoryId,
+                    initialValue: _categoryId,
                     decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
                     items: _categories.map((category) => DropdownMenuItem<String>(
                       value: category['id'].toString(),
