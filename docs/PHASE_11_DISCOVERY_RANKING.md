@@ -1,7 +1,7 @@
 # Phase 11 — Discovery Ranking
 
 ## Status
-Implemented moderate sponsored ranking for business results and offer-specific sponsored labels in public web search and Flutter customer discovery.
+Implemented search-first discovery for matching shops, products, services, and offers in public web search and Flutter customer discovery; moderate sponsored ranking is applied to business results and offer-specific sponsored labels to offers.
 
 ## Frozen behavior
 - Keep search-first local discovery and existing public eligibility rules.
@@ -17,6 +17,12 @@ Implemented moderate sponsored ranking for business results and offer-specific s
 - `mobile/lib/features/customer/customer_discovery_screen.dart`
 - `docs/SEARCH_RANKING.md`
 - `supabase/migrations/20261009100000_phase11_discovery_ranking.sql`
+
+## Product and service discovery
+- Search includes matching active, available products by name/description and shows price/unit plus the associated shop.
+- Search includes matching active, available services by name/description and shows price/duration plus the associated provider.
+- Existing RLS on `business_products` and `business_services` restricts public rows to active, available inventory owned by active, verified businesses.
+- Inventory results are supplementary and do not carry paid sponsor labels; Boost Shop remains a business-card promotion and Promote Offer remains offer-card-only.
 
 ## Offer discovery
 - Search now includes matching active offers by title/description, alongside matching shops.
