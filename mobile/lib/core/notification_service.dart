@@ -72,8 +72,14 @@ class NotificationService {
     _tapSubscription = FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageTap);
     _foregroundSubscription = FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
     _tokenSubscription = messaging.onTokenRefresh.listen((token) {
+      final previousToken = _currentToken;
       _currentToken = token;
-      unawaited(_registerToken(token));
+      unawaited(() async {
+        if (previousToken != null && previousToken != token) {
+          await _unregisterToken(previousToken);
+        }
+        await _registerToken(token);
+      }());
     });
 
     final initialMessage = await messaging.getInitialMessage();
@@ -121,16 +127,21 @@ class NotificationService {
   }
 
   Future<void> unregisterCurrentDevice() async {
-    final client = _client;
-    if (!_firebaseReady || client == null || client.auth.currentUser == null) return;
+    if (!_firebaseReady || _client?.auth.currentUser == null) return;
     try {
       final token = _currentToken ?? await FirebaseMessaging.instance.getToken();
       if (token == null || token.isEmpty) return;
-      await client.rpc('unregister_device_token', params: {'p_token': token});
-      _currentToken = token;
+      await _unregisterToken(token);
+      _currentToken = null;
     } catch (error) {
       debugPrint('FCM device token could not be deactivated: $error');
     }
+  }
+
+  Future<void> _unregisterToken(String token) async {
+    final client = _client;
+    if (!_firebaseReady || client == null || client.auth.currentUser == null) return;
+    await client.rpc('unregister_device_token', params: {'p_token': token});
   }
 
   void _handleMessageTap(RemoteMessage message) {
