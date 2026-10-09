@@ -26,3 +26,5 @@ The current Supabase project has no request/notification worker deployed yet, an
 - Migrations were applied to the live RDS STUDIO ACCOUNT project; the request-expiry and due-notification queue indexes were verified by migration success.
 - Security Advisor no longer reports the internal reminder-trigger function as callable by anon/authenticated. It still reports three intentional authenticated SECURITY DEFINER RPCs; each is restricted to authenticated callers and performs explicit identity, ownership, state, and input checks.
 - Run authenticated integration tests for create, cross-merchant response rejection, accept/decline, customer cancellation, and reminder cancellation before pilot use.
+
+- Flutter static analysis/build and Next.js production build have not been run in this environment; GitHub commits and successful SQL migration application do not establish app compile success.
