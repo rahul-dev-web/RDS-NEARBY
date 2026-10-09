@@ -1,7 +1,7 @@
 # Phase 11 — Discovery Ranking
 
 ## Status
-Implemented initial moderate sponsored ranking for existing business-card search in the public web app and Flutter customer discovery.
+Implemented moderate sponsored ranking for business results and offer-specific sponsored labels in public web search and Flutter customer discovery.
 
 ## Frozen behavior
 - Keep search-first local discovery and existing public eligibility rules.
@@ -18,10 +18,16 @@ Implemented initial moderate sponsored ranking for existing business-card search
 - `docs/SEARCH_RANKING.md`
 - `supabase/migrations/20261009100000_phase11_discovery_ranking.sql`
 
-## Offer promotion boundary
-The public search currently renders business cards rather than offer cards. Phase 11 adds an index for active `promote_offer` campaigns, but does not incorrectly label an entire business as sponsored due to an offer promotion. The offer ranking signal must be consumed when offer cards are included in discovery.
+## Offer discovery
+- Search now includes matching active offers by title/description, alongside matching shops.
+- A `promote_offer` campaign labels only its matching offer card `SPONSORED`; it never marks the entire business as sponsored.
+- Offer cards are supplementary results; if the campaign lookup fails, matching offers remain visible as organic results.
+- Public offer reads remain constrained by existing RLS: active, time-valid offers from active, verified businesses.
+- This slice does not implement the Phase 13 Today's Near You feed, geo-distance ranking, or offer redemption.
 
 ## Validation notes
 - Live migration adds partial indexes for active Boost Shop and Promote Offer lookup paths.
-- Verify the indexes and run Supabase Security and Performance Advisors after migration.
+- Live indexes for active Boost Shop and Promote Offer lookups were verified; existing offer time-window/business indexes were also inspected.
+- Supabase Security Advisor returned no findings at the previous Phase 11 check; performance advisor has existing unused-index and multiple-permissive-policy notices.
+- Flutter static analysis/build and Next.js production build have not been run in this environment; GitHub commits alone do not establish compile success.
 - Flutter static analysis/build and Next.js production build have not been run in this environment; GitHub commits alone do not establish compile success.
