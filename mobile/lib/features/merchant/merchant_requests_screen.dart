@@ -155,7 +155,7 @@ class _MerchantRequestsScreenState extends State<MerchantRequestsScreen> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: _loading
-            ? const ListView(children: [SizedBox(height: 220), Center(child: CircularProgressIndicator())])
+            ? ListView(children: const [SizedBox(height: 220), Center(child: CircularProgressIndicator())])
             : _error != null
                 ? ListView(children: [const SizedBox(height: 100), Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!, textAlign: TextAlign.center))), Center(child: TextButton(onPressed: _load, child: const Text('Try again')))])
                 : _requests.isEmpty
