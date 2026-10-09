@@ -26,8 +26,24 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>{
       const SizedBox(height:24),TextField(controller:name,decoration:const InputDecoration(labelText:'Your name',border:OutlineInputBorder())),
       const SizedBox(height:24),const Text('Choose your mode'),
       const SizedBox(height:8),
-      RadioListTile<String>(value:'customer',groupValue:role,onChanged:(v)=>setState(()=>role=v),title:const Text('Customer'),subtitle:const Text('Find nearby shops, offers and services.')),
-      RadioListTile<String>(value:'merchant',groupValue:role,onChanged:(v)=>setState(()=>role=v),title:const Text('Merchant'),subtitle:const Text('List your business and grow local customers.')),
+      RadioGroup<String>(
+        groupValue: role,
+        onChanged: (value) => setState(() => role = value),
+        child: Column(
+          children: [
+            RadioListTile<String>(
+              value: 'customer',
+              title: const Text('Customer'),
+              subtitle: const Text('Find nearby shops, offers and services.'),
+            ),
+            RadioListTile<String>(
+              value: 'merchant',
+              title: const Text('Merchant'),
+              subtitle: const Text('List your business and grow local customers.'),
+            ),
+          ],
+        ),
+      ),
       if(error!=null)Text(error!,style:TextStyle(color:Theme.of(context).colorScheme.error)),
       const SizedBox(height:16),SizedBox(width:double.infinity,child:FilledButton(onPressed:busy?null:save,child:Text(busy?'Saving…':'Continue'))),
     ])));
