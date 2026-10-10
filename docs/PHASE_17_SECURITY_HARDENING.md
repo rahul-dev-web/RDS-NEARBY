@@ -8,8 +8,8 @@ Status: implementation started. This phase is not production-ready until the acc
 - Live project ref: `kkgkvpjcmwfarkdkhcme` (ap-south-1).
 - Phase 16 analytics migrations are recorded in the live database.
 - Core tables have RLS enabled.
-- Fraud review records currently have a client-facing `fraud_own_read` policy. Fraud flags are operational risk signals and should not be exposed to the account being reviewed; Phase 17 removes that policy and revokes direct client table access.
-- Several public SECURITY DEFINER RPCs exist for customer requests and redemption. They contain ownership/authentication checks, but must be verified through negative integration tests, not by the Security Advisor warning count alone.
+- Before Phase 17, fraud review records had a client-facing `fraud_own_read` policy. The policy has now been removed and direct `anon`/`authenticated` table privileges revoked; fraud flags should not be exposed to the account being reviewed.
+- Several public SECURITY DEFINER RPCs exist for customer requests and redemption. They require focused authorization review and negative integration tests; a Security Advisor warning alone does not prove exploitability or safety.
 - The live database currently has no business rows and no analytics events, so populated-data behaviour has not been proven.
 
 ## Security goals
@@ -23,12 +23,13 @@ Status: implementation started. This phase is not production-ready until the acc
 
 ## Initial database hardening
 
-Migration: `20261010170000_phase17_private_fraud_flags.sql`
+Migration: `20261010041244_phase17_private_fraud_flags.sql` (matches the migration version recorded in the live Supabase project).
 
 - Drops `fraud_own_read`.
 - Revokes direct `anon` and `authenticated` privileges on `public.fraud_flags`.
-- Keeps RLS enabled and documents the intended access boundary.
+- Keeps RLS enabled with no client policies, so direct client access is blocked.
 - Trusted backend workflows using `service_role` / database owner continue to perform fraud review operations.
+- Live verification: `pg_policies` returned no policies for `public.fraud_flags`; Security Advisor reports the expected informational `rls_enabled_no_policy` finding.
 
 ## Required fraud checks
 
@@ -77,7 +78,7 @@ Known functions requiring focused negative tests include `create_customer_reques
 8. Suspended profiles cannot perform customer/merchant actions.
 
 ### Release gate
-- Apply migration through versioned migration tooling and verify the migration is recorded.
+- Verify migration history and ensure the checked-in migration version matches the live version.
 - Re-run Security and Performance Advisors.
 - Run Flutter analyze/tests and Next.js typecheck/build.
 - Run authenticated integration tests with separate customer and merchant test accounts in a non-production environment.
