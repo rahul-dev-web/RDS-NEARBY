@@ -58,7 +58,7 @@ The `review-fraud-flag` Edge Function is deployed with JWT verification enabled.
 
 ### Profile and business column privileges (additional hardening)
 
-Migration: `20261010123000_phase17_column_privilege_hardening.sql`.
+Migration: `20261010070600_phase17_column_privilege_hardening.sql`.
 
 The live RLS review found that row-ownership policies alone did not prevent an owner from attempting to update trusted fields on their own row. Authenticated users now have column-level UPDATE grants only:
 
