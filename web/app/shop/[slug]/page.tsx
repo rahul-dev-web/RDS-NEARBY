@@ -93,6 +93,38 @@ export default async function ShopPage({
 
   if (!business) notFound();
 
+  // Best-effort analytics: never let telemetry break the public shop page.
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.rpc('record_analytics_event', {
+        p_event_name: 'shop_view',
+        p_business_id: business.id,
+        p_metadata: { source: 'public_web' },
+      });
+      const activeOffers = (business.offers ?? []).filter((offer: {
+        status: string;
+        starts_at: string;
+        ends_at: string;
+      }) => {
+        const now = Date.now();
+        return offer.status === 'active' &&
+          new Date(offer.starts_at).getTime() <= now &&
+          new Date(offer.ends_at).getTime() >= now;
+      });
+      await Promise.all(activeOffers.map((offer: { id: string }) =>
+        supabase.rpc('record_analytics_event', {
+          p_event_name: 'offer_view',
+          p_business_id: business.id,
+          p_metadata: { offer_id: offer.id, source: 'public_web' },
+        })
+      ));
+    }
+  } catch {
+    // Analytics is best-effort and must not interrupt shop discovery.
+  }
+
   const category = Array.isArray(business.categories)
     ? business.categories[0]
     : business.categories;
