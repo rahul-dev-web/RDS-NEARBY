@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/referral_activity_service.dart';
+import '../../core/analytics_service.dart';
 import 'customer_referral_screen.dart';
 
 class CustomerDiscoveryScreen extends StatefulWidget {
@@ -218,6 +219,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
 
       if (mounted) setState(() { _businesses = businesses; _offers = offers; _products = products; _services = services; _loading = false; });
       await _referralActivity.recordMeaningfulActivity('SEARCH');
+      if (query.isNotEmpty) await AnalyticsService(_client).record('search');
     } catch (e) {
       if (mounted) setState(() { _error = 'Could not load nearby businesses.'; _loading = false; });
     }
@@ -455,6 +457,14 @@ class _BusinessCard extends StatelessWidget {
   }
 
   Future<void> _launch(BuildContext context, Uri uri, String failureMessage) async {
+    final businessId = business['id']?.toString();
+    if (businessId != null) {
+      if (uri.scheme == 'tel') {
+        await AnalyticsService(Supabase.instance.client).record('call_click', businessId: businessId);
+      } else if (uri.host == 'wa.me') {
+        await AnalyticsService(Supabase.instance.client).record('whatsapp_click', businessId: businessId);
+      }
+    }
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failureMessage)));
@@ -526,6 +536,7 @@ class _BusinessCard extends StatelessWidget {
         'p_title': form['title'],
         'p_description': (form['description'] ?? '').isEmpty ? null : form['description'],
       });
+      await AnalyticsService(Supabase.instance.client).record('request_created', businessId: business['id'].toString(), metadata: {'request_type': form['request_type']});
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Request sent. The shop has up to 10 minutes to respond.')));
     } catch (_) {
