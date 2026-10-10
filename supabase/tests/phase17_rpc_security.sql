@@ -173,6 +173,28 @@ BEGIN
     RAISE EXCEPTION 'review_fraud_flag must be executable only by service_role';
   END IF;
 
+  -- RLS does not stop a row owner from changing trusted columns unless column
+  -- privileges also restrict the writable field set.
+  IF has_table_privilege('authenticated', 'public.profiles', 'UPDATE')
+     OR has_column_privilege('authenticated', 'public.profiles', 'role', 'UPDATE')
+     OR has_column_privilege('authenticated', 'public.profiles', 'status', 'UPDATE')
+     OR has_column_privilege('authenticated', 'public.businesses', 'owner_id', 'UPDATE')
+     OR has_column_privilege('authenticated', 'public.businesses', 'status', 'UPDATE')
+     OR has_column_privilege('authenticated', 'public.businesses', 'verification_status', 'UPDATE')
+     OR has_column_privilege('authenticated', 'public.businesses', 'is_open', 'UPDATE')
+     OR has_column_privilege('authenticated', 'public.businesses', 'updated_at', 'UPDATE') THEN
+    RAISE EXCEPTION 'Authenticated users can update protected profile/business columns';
+  END IF;
+
+  IF has_table_privilege('authenticated', 'public.businesses', 'UPDATE')
+     OR NOT has_column_privilege('authenticated', 'public.profiles', 'name', 'UPDATE')
+     OR NOT has_column_privilege('authenticated', 'public.profiles', 'avatar_url', 'UPDATE')
+     OR NOT has_column_privilege('authenticated', 'public.businesses', 'name', 'UPDATE')
+     OR NOT has_column_privilege('authenticated', 'public.businesses', 'accepting_requests', 'UPDATE')
+     OR NOT has_column_privilege('authenticated', 'public.businesses', 'local_rewards_enabled', 'UPDATE') THEN
+    RAISE EXCEPTION 'Column-limited profile/business update grants are missing or too broad';
+  END IF;
+
   -- Idempotency constraints are the last line of defense against concurrent retries.
   IF NOT EXISTS (
     SELECT 1 FROM pg_indexes
