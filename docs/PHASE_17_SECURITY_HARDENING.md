@@ -83,3 +83,15 @@ Known functions requiring focused negative tests include `create_customer_reques
 - Run Flutter analyze/tests and Next.js typecheck/build.
 - Run authenticated integration tests with separate customer and merchant test accounts in a non-production environment.
 - Do not call Phase 17 complete until results are recorded here.
+
+
+## RPC search-path hardening (2026-10-10)
+
+Migration recorded in live Supabase: `20261010042216_phase17_rpc_search_path_hardening`.
+
+- Pinned all five request/redemption SECURITY DEFINER RPCs to an empty `search_path`; their relations, enums, and auth helper references are schema-qualified.
+- Verified live catalog: all five functions have `search_path=""`.
+- Verified live grants: `anon` and `PUBLIC` cannot execute these five RPCs; `authenticated` can, as required by the current Flutter request/redemption flows.
+- Added `supabase/tests/phase17_rpc_security.sql` for catalog-level regression checks.
+
+**Remaining:** authenticated-callable SECURITY DEFINER RPCs still appear in Security Advisor by design. This change hardens name resolution but does not replace function-level ownership/role/state checks or authenticated negative integration tests. Do not mark Phase 17 complete yet.
