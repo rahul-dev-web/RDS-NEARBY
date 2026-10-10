@@ -51,7 +51,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
       });
       return;
     }
-    setState(() { _todayLoading = true; _todayError = null; _todaySearched = true; });
+    setState(() { _todayLoading = true; _todayError = null; _todaySearched = true; _todayItems = []; });
     try {
       final response = await _client.rpc('get_todays_near_you', params: {
         'p_lat': null,
