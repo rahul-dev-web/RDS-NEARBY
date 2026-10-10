@@ -33,8 +33,15 @@ BEGIN
         'respond_customer_request',
         'respond_to_point_redemption'
       )
-      AND (has_function_privilege('anon', p.oid, 'EXECUTE')
-           OR has_function_privilege('public', p.oid, 'EXECUTE'))
+      AND (
+        has_function_privilege('anon', p.oid, 'EXECUTE')
+        OR EXISTS (
+          SELECT 1
+          FROM aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl
+          WHERE acl.grantee = 0
+            AND acl.privilege_type = 'EXECUTE'
+        )
+      )
   ) THEN
     RAISE EXCEPTION 'A private request/redemption RPC remains executable by anon/PUBLIC';
   END IF;
