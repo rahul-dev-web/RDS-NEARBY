@@ -168,10 +168,10 @@ as $function$
   from combined
   cross join params
   order by
-    combined.is_sponsored desc,
     case when combined.distance_km is null then 1 else 0 end,
     combined.distance_km asc nulls last,
     combined.is_open desc,
+    combined.is_sponsored desc,
     combined.ends_at asc
   limit (select row_limit from params);
 $function$;
