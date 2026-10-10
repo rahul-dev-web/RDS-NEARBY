@@ -118,11 +118,38 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
           .gt('ends_at', now);
       final boostedIds = List<Map<String, dynamic>>.from(boosts)
           .map((campaign) => campaign['business_id'].toString()).toSet();
-      final organic = businesses.where((business) => !boostedIds.contains(business['id'].toString())).toList();
-      final sponsored = businesses.where((business) => boostedIds.contains(business['id'].toString())).toList();
+      int relevanceScore(Map<String, dynamic> business) {
+        if (query.isEmpty) return 0;
+        final q = query.toLowerCase();
+        final name = (business['name']?.toString() ?? '').toLowerCase();
+        final description = (business['description']?.toString() ?? '').toLowerCase();
+        final address = (business['address']?.toString() ?? '').toLowerCase();
+        if (name == q) return 100;
+        if (name.startsWith(q)) return 80;
+        if (name.contains(q)) return 60;
+        if (description.contains(q)) return 30;
+        if (address.contains(q)) return 15;
+        return 0;
+      }
+
+      int compareRelevance(Map<String, dynamic> a, Map<String, dynamic> b) {
+        final scoreDifference = relevanceScore(b).compareTo(relevanceScore(a));
+        if (scoreDifference != 0) return scoreDifference;
+        final openDifference = ((b['is_open'] == true) ? 1 : 0)
+            .compareTo((a['is_open'] == true) ? 1 : 0);
+        if (openDifference != 0) return openDifference;
+        return (a['name']?.toString() ?? '').toLowerCase()
+            .compareTo((b['name']?.toString() ?? '').toLowerCase());
+      }
+
+      final organic = businesses.where((business) => !boostedIds.contains(business['id'].toString())).toList()
+        ..sort(compareRelevance);
+      final sponsored = businesses.where((business) => boostedIds.contains(business['id'].toString())).toList()
+        ..sort(compareRelevance);
       businesses = [];
       var organicIndex = 0;
       var sponsoredIndex = 0;
+      // Keep relevant organic results first-class: at most one sponsored shop per four slots.
       while (organicIndex < organic.length || sponsoredIndex < sponsored.length) {
         for (var slot = 0; slot < 3 && organicIndex < organic.length; slot++) {
           businesses.add(organic[organicIndex++]);
