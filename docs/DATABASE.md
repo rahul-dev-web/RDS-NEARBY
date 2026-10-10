@@ -103,6 +103,15 @@ The ERD is a domain-level map, not a migration. Confirm exact cardinality, nulla
 - Push delivery never authorizes data access.
 - Resolved/expired requests do not receive reminders.
 
+## Business analytics (Phase 16)
+
+- `analytics_events` stores authenticated product events with optional business attribution and small, non-sensitive JSON metadata.
+- `record_analytics_event` is SECURITY INVOKER, authenticated-only, validates the event allowlist and metadata shape/size, and rejects events for unavailable businesses.
+- `get_merchant_business_analytics` is an authenticated aggregate-only RPC. It checks that `auth.uid()` owns the requested business and returns counts/totals without customer identifiers or event payloads.
+- Indexes support business/event/time and user/event/time queries.
+- Client telemetry is not a financial source of truth. Credits, campaign usage, requests, referrals and redemption KPIs are computed from their transactional tables.
+- Authenticated public shop-page views and active offer exposures plus Flutter searches/call/WhatsApp/Customer Request events are currently tracked. Anonymous web traffic, shop saves, Offer Claims and some mobile view events are not fully wired yet.
+
 ## Gaps to track
 
 - FCM delivery setup and real-device tests remain outstanding.
