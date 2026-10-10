@@ -13,6 +13,7 @@ import '../merchant/merchant_credit_wallet_screen.dart';
 import '../merchant/merchant_offers_screen.dart';
 import '../merchant/merchant_requests_screen.dart';
 import '../merchant/merchant_redemptions_screen.dart';
+import '../merchant/merchant_analytics_screen.dart';
 import '../customer/customer_discovery_screen.dart';
 
 class AuthGate extends StatelessWidget {
@@ -124,6 +125,7 @@ class MerchantHomeScreen extends StatelessWidget {
                       if (value == 'offers') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantOffersScreen(businessId: businessId, businessName: businessName)));
                       if (value == 'requests') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantRequestsScreen(businessId: businessId, businessName: businessName)));
                       if (value == 'redemptions') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantRedemptionsScreen(businessId: businessId, businessName: businessName)));
+                      if (value == 'analytics') Navigator.of(context).push(MaterialPageRoute(builder: (_) => MerchantAnalyticsScreen(businessId: businessId, businessName: businessName)));
                     },
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'catalog', child: Text('Products & Services')),
@@ -132,6 +134,7 @@ class MerchantHomeScreen extends StatelessWidget {
                       PopupMenuItem(value: 'offers', child: Text('Offers & Promotions')),
                       PopupMenuItem(value: 'requests', child: Text('Customer Requests')),
                       PopupMenuItem(value: 'redemptions', child: Text('Local Points Redemptions')),
+                      PopupMenuItem(value: 'analytics', child: Text('Business Analytics')),
                       PopupMenuItem(value: 'settings', child: Text('Business Settings')),
                     ],
                   ),
