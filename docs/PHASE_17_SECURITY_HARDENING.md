@@ -56,6 +56,19 @@ The `review-fraud-flag` Edge Function is deployed with JWT verification enabled.
 - The private `fraud_flags` table has RLS enabled with no client policies by design.
 - Performance Advisor's unused-index findings are not acted on during an empty/early pilot; do not drop potentially useful indexes before representative query traffic exists. Multiple permissive-policy warnings are a separate optimization review.
 
+### Profile and business column privileges (additional hardening)
+
+Migration: `20261010123000_phase17_column_privilege_hardening.sql`.
+
+The live RLS review found that row-ownership policies alone did not prevent an owner from attempting to update trusted fields on their own row. Authenticated users now have column-level UPDATE grants only:
+
+- `profiles`: `name`, `phone`, and `avatar_url`.
+- `businesses`: merchant-editable profile, location, hours, request-availability, and Local Rewards configuration fields.
+
+Authenticated users cannot update profile `role/status`, business `owner_id/status/verification_status/is_open/updated_at`, or perform table-wide UPDATE. RLS ownership checks still apply to the permitted columns. Trusted admin/service workflows are unaffected. The schema test now asserts both denied protected columns and expected merchant-editable columns.
+
+This closes an escalation path where an authenticated user might otherwise try to self-promote to admin or self-publish/unverify a business through a direct table update. Keep the mobile client aligned with these column grants; if a legitimate field needs to become client-editable, add it explicitly after review rather than restoring table-wide UPDATE.
+
 ### Regression test coverage
 
 `supabase/tests/phase17_rpc_security.sql` is a read-only catalog test. It now verifies:
