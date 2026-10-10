@@ -59,8 +59,8 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
   Future<void> _save() async {
     final minBill = double.tryParse(_minBill.text.trim());
     final maxDiscount = double.tryParse(_maxDiscount.text.trim());
-    if (_rewards && (minBill == null || minBill < 0 || maxDiscount == null || maxDiscount < 0)) {
-      setState(() => _error = 'Enter valid reward limits or switch Local Rewards off.');
+    if (_rewards && (minBill == null || !minBill.isFinite || minBill <= 0 || maxDiscount == null || !maxDiscount.isFinite || maxDiscount <= 0)) {
+      setState(() => _error = 'Local Rewards needs a minimum bill and maximum discount, both greater than ₹0. Or switch Local Rewards off.');
       return;
     }
     setState(() { _saving = true; _error = null; });
@@ -106,8 +106,8 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
       const SizedBox(height: 10),
       ..._days.map((day) => Card(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
         SizedBox(width: 78, child: Text(day.value, style: const TextStyle(fontWeight: FontWeight.w600))),
-        Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, true), child: Text(_formatTime(_open[day.key] ?? const TimeOfDay(hour: 9, minute: 0))))),
-        Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, false), child: Text(_formatTime(_close[day.key] ?? const TimeOfDay(hour: 18, minute: 0))))),
+        Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, true), child: Text(_formatTime(_open[day.key] ?? const TimeOfDay(hour: 9, minute: 0)))),
+        Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, false), child: Text(_formatTime(_close[day.key] ?? const TimeOfDay(hour: 18, minute: 0)))),
         Checkbox(value: _closedDays.contains(day.key), onChanged: (v) => setState(() { if (v == true) { _closedDays.add(day.key); } else { _closedDays.remove(day.key); } })),
       ])))),
       const SizedBox(height: 8),
@@ -120,7 +120,7 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
         const SizedBox(height: 12),
         TextField(controller: _maxDiscount, keyboardType: const TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: 'Maximum discount', prefixText: '₹ ', border: OutlineInputBorder())),
         const SizedBox(height: 8),
-        const Text('Default economics: 100 Local Points = ₹10 reward value. The merchant sets the maximum discount.', style: TextStyle(fontSize: 12)),
+        const Text('Default economics: 100 Local Points = ₹10 reward value. Minimum bill and maximum discount must both be greater than ₹0.', style: TextStyle(fontSize: 12)),
       ],
       if (_error != null) ...[const SizedBox(height: 12), Text(_error!, style: TextStyle(color: Colors.red))],
       const SizedBox(height: 20),
