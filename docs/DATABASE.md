@@ -1,6 +1,6 @@
 # RDS Nearby — Database & ERD Baseline
 
-Status: Phase 0 schema inventory and target model. This document is planning and documentation only; it does not mutate the live database.
+Status: Phase 0 schema inventory and target model, updated for Phase 15 redemption.
 
 ## Principles
 
@@ -12,7 +12,7 @@ Status: Phase 0 schema inventory and target model. This document is planning and
 - Business coordinates are stored; customer location should remain transient unless a separately approved use case requires persistence.
 - Never store service credentials in tables, source control, client bundles, or push payloads.
 
-## Existing live table inventory (checked 2026-10-09)
+## Existing live table inventory
 
 | Domain | Existing tables | Responsibility |
 |---|---|---|
@@ -22,13 +22,13 @@ Status: Phase 0 schema inventory and target model. This document is planning and
 | Promotion | `campaigns` | Boost Shop / Promote Offer campaign windows, credit cost and optional offer association |
 | Referral | `merchant_referral_tokens`, `referrals`, `referral_events` | Opaque merchant QR identity, attribution lifecycle and event trail |
 | Merchant credits | `merchant_wallets`, `merchant_credit_ledger` | Marketing Credits balance and transaction history |
-| Customer points | `customer_wallets`, `customer_points_ledger`, `redemptions` | Local Points balance, ledger and merchant-funded redemption records |
+| Customer points | `customer_wallets`, `customer_points_ledger`, `redemptions` | Local Points balance, immutable ledger, merchant-funded redemption records and idempotency |
 | Customer demand | `customer_requests`, `request_responses` | Request lifecycle and business response records |
 | Notifications | `notifications`, `notification_preferences`, `device_tokens` | Delivery queue, recipient preferences, registered push tokens |
 | Retention | `saved_businesses` | User-saved businesses |
 | Operations | `analytics_events`, `audit_logs`, `fraud_flags`, `memberships` | Product events, privileged-action audit, fraud review and membership state |
 
-This is a verified inventory of table names, not a claim that every planned feature is complete. Exact columns, constraints, foreign keys, enum values, grants and policies are defined by the applied migrations and live schema.
+This is a verified table inventory, not a claim that every planned feature is complete. Exact columns, constraints, foreign keys, enum values, grants and policies are defined by applied migrations and the live schema.
 
 ## Logical ERD
 
@@ -56,6 +56,9 @@ erDiagram
   PROFILES ||--o{ NOTIFICATIONS : receives
   PROFILES ||--o{ SAVED_BUSINESSES : saves
   BUSINESSES ||--o{ SAVED_BUSINESSES : saved_by
+  PROFILES ||--o{ REDEMPTIONS : requests
+  BUSINESSES ||--o{ REDEMPTIONS : resolves
+  REDEMPTIONS ||--o| CUSTOMER_POINTS_LEDGER : redemption_or_reversal
 ```
 
 The ERD is a domain-level map, not a migration. Confirm exact cardinality, nullable references, foreign keys, and delete behaviour from migrations before changing schema.
@@ -78,6 +81,16 @@ The ERD is a domain-level map, not a migration. Confirm exact cardinality, nulla
 - 100 Local Points represent ₹10 reward value; redemption is merchant-funded and subject to merchant limits.
 - Reward mutations are backend-controlled and idempotent.
 
+### Local Points redemption (Phase 15)
+- Only an active customer may redeem at an active, verified business that enabled Local Rewards and configured a positive minimum bill and maximum discount.
+- The customer cannot redeem at their own business.
+- The server computes the discount as the least of requested point value, merchant maximum discount, and bill amount.
+- Only points matching the final discount are deducted; 100 points = ₹10.
+- Wallet row locking and idempotency keys prevent concurrent double-spend and duplicate retries.
+- New redemptions are pending. The owning merchant can approve them or reject them.
+- Rejection refunds points once through a positive `reversal` ledger entry. Approval, rejection, and refund decisions are audited.
+- Clients cannot directly insert/update/delete wallets, points ledger, or redemption records.
+
 ### Campaigns
 - Boost Shop: 50 Marketing Credits / 24 hours.
 - Promote Offer: 100 Marketing Credits / 3 days.
@@ -94,6 +107,7 @@ The ERD is a domain-level map, not a migration. Confirm exact cardinality, nulla
 
 - FCM delivery setup and real-device tests remain outstanding.
 - Today's Near You has an initial locality-based RPC and mobile UI. GPS integration, normalized locality data, populated-data acceptance tests, and device-level verification remain outstanding.
-- Points redemption, analytics completeness, fraud/security hardening, membership billing and Ask Nearby Shops are later scope.
+- Phase 15 has server-side redemption and customer/merchant UI; populated-data concurrency, idempotency and device acceptance tests still need to run.
+- Analytics completeness, fraud/security hardening, membership billing and Ask Nearby Shops remain later scope.
 - Security Advisor has reported authenticated SECURITY DEFINER request RPCs. Review their authorization checks and grants; do not blindly convert them to SECURITY INVOKER.
 - Keep GitHub migration files aligned with live migration history and verify each new migration before applying it.
