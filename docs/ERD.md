@@ -78,7 +78,7 @@ Push is an attention mechanism. `customer_requests` remains the source of truth.
 
 ## Planned scope versus live schema
 
-The table inventory currently includes the core identity, discovery, campaign, referral, wallet/ledger, request, notification, membership, fraud, audit and analytics tables. The following remain feature work even where supporting tables already exist: a complete customer referral UX and reward path, fully tested points redemption, Today's Near You feed with locality/distance handling, analytics completeness, fraud review operations, and membership billing.
+The table inventory currently includes the core identity, discovery, campaign, referral, wallet/ledger, request, notification, membership, fraud, audit and analytics tables. The following remain feature work even where supporting tables already exist: a complete customer referral UX and reward path, fully tested points redemption, GPS-enabled Today's Near You and populated-data acceptance tests, analytics completeness, fraud review operations, and membership billing.
 
 ## Security boundaries
 
