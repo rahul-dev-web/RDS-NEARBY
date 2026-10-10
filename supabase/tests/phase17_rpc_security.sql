@@ -2,6 +2,7 @@
 DO $$
 DECLARE
   v_missing text;
+  v_definition text;
 BEGIN
   SELECT string_agg(p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')', ', ')
     INTO v_missing
@@ -44,6 +45,50 @@ BEGIN
       )
   ) THEN
     RAISE EXCEPTION 'A private request/redemption RPC remains executable by anon/PUBLIC';
+  END IF;
+
+  -- Assert role/status guards are present in the actual deployed function bodies.
+  SELECT pg_get_functiondef(p.oid) INTO v_definition
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'create_customer_request';
+  IF v_definition IS NULL
+     OR position('An active customer profile is required' IN v_definition) = 0
+     OR position('pr.status = ''active''::public.record_status' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'create_customer_request lacks active customer role/status guard';
+  END IF;
+
+  SELECT pg_get_functiondef(p.oid) INTO v_definition
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'cancel_customer_request';
+  IF v_definition IS NULL
+     OR position('An active customer profile is required' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'cancel_customer_request lacks active customer role/status guard';
+  END IF;
+
+  SELECT pg_get_functiondef(p.oid) INTO v_definition
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'respond_customer_request';
+  IF v_definition IS NULL
+     OR position('An active merchant profile is required' IN v_definition) = 0
+     OR position('p_decision IS NULL' IN v_definition) = 0
+     OR position('p_price::text IN (''NaN'', ''Infinity'', ''-Infinity'')' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'respond_customer_request lacks role or input validation';
+  END IF;
+
+  SELECT pg_get_functiondef(p.oid) INTO v_definition
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'respond_to_point_redemption';
+  IF v_definition IS NULL
+     OR position('An active merchant profile is required' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'respond_to_point_redemption lacks active merchant role/status guard';
+  END IF;
+
+  SELECT pg_get_functiondef(p.oid) INTO v_definition
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'redeem_customer_points';
+  IF v_definition IS NULL
+     OR position('An active customer profile is required' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'redeem_customer_points lacks active customer role/status guard';
   END IF;
 END;
 $$;
