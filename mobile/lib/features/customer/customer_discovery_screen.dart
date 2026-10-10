@@ -367,6 +367,78 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
   }
 }
 
+class _TodayNearYouCard extends StatelessWidget {
+  const _TodayNearYouCard({required this.item});
+
+  final Map<String, dynamic> item;
+
+  @override
+  Widget build(BuildContext context) {
+    final isShop = item['item_type'] == 'shop';
+    final sponsored = item['is_sponsored'] == true;
+    final offerPrice = item['offer_price'];
+    final regularPrice = item['regular_price'];
+    final distance = item['distance_km'];
+    final locality = item['locality_id']?.toString();
+    final address = item['address']?.toString();
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Wrap(spacing: 6, runSpacing: 4, children: [
+            Chip(
+              visualDensity: VisualDensity.compact,
+              label: Text(isShop ? 'Shop' : 'Offer'),
+              avatar: Icon(isShop ? Icons.storefront_outlined : Icons.local_offer_outlined, size: 16),
+            ),
+            if (sponsored)
+              const Chip(
+                visualDensity: VisualDensity.compact,
+                label: Text('SPONSORED'),
+                avatar: Icon(Icons.campaign_outlined, size: 16),
+              ),
+            if (item['is_open'] == true)
+              const Chip(visualDensity: VisualDensity.compact, label: Text('Open now')),
+          ]),
+          Text(
+            item['title']?.toString() ?? item['business_name']?.toString() ?? 'Local business',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          if (!isShop && (item['description']?.toString() ?? '').trim().isNotEmpty) ...[
+            const SizedBox(height: 3),
+            Text(item['description'].toString(), maxLines: 2, overflow: TextOverflow.ellipsis),
+          ],
+          const SizedBox(height: 4),
+          Text(item['business_name']?.toString() ?? 'Local business', style: Theme.of(context).textTheme.bodyMedium),
+          if (!isShop && offerPrice != null) ...[
+            const SizedBox(height: 4),
+            Row(children: [
+              Text('₹$offerPrice', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              if (regularPrice != null) ...[
+                const SizedBox(width: 8),
+                Text('₹$regularPrice', style: const TextStyle(decoration: TextDecoration.lineThrough)),
+              ],
+            ]),
+          ],
+          if ((address ?? '').isNotEmpty || (locality ?? '').isNotEmpty || distance != null) ...[
+            const SizedBox(height: 5),
+            Row(children: [
+              const Icon(Icons.location_on_outlined, size: 16),
+              const SizedBox(width: 4),
+              Expanded(child: Text([
+                if ((locality ?? '').isNotEmpty) locality!,
+                if ((address ?? '').isNotEmpty) address!,
+                if (distance != null) '${(distance as num).toStringAsFixed(1)} km away',
+              ].join(' · '), maxLines: 2, overflow: TextOverflow.ellipsis)),
+            ]),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
 class _BusinessCard extends StatelessWidget {
   const _BusinessCard({required this.business});
 
