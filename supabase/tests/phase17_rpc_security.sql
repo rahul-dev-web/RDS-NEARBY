@@ -1,8 +1,10 @@
 -- Phase 17 catalog-level regression checks. Run against a migrated test database.
+-- These checks are read-only and may also be run against the linked project's live catalog.
 DO $$
 DECLARE
   v_missing text;
   v_definition text;
+  v_privilege text;
 BEGIN
   SELECT string_agg(p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')', ', ')
     INTO v_missing
@@ -68,21 +70,47 @@ BEGIN
     RAISE EXCEPTION 'A service-only SECURITY DEFINER helper is executable by client roles';
   END IF;
 
+  -- Fraud review metadata is intentionally not a client-facing API.
+  IF NOT (
+    SELECT c.relrowsecurity
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relname = 'fraud_flags'
+  ) THEN
+    RAISE EXCEPTION 'fraud_flags must have RLS enabled';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'fraud_flags'
+  ) THEN
+    RAISE EXCEPTION 'fraud_flags must not have client-facing RLS policies';
+  END IF;
+
+  FOREACH v_privilege IN ARRAY ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'] LOOP
+    IF has_table_privilege('anon', 'public.fraud_flags', v_privilege)
+       OR has_table_privilege('authenticated', 'public.fraud_flags', v_privilege) THEN
+      RAISE EXCEPTION 'Client role has unexpected % privilege on fraud_flags', v_privilege;
+    END IF;
+  END LOOP;
+
   SELECT pg_get_functiondef(p.oid) INTO v_definition
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'create_customer_request';
   IF v_definition IS NULL
      OR position('An active customer profile is required' IN v_definition) = 0
-     OR position('pr.status = ''active''::public.record_status' IN v_definition) = 0 THEN
-    RAISE EXCEPTION 'create_customer_request lacks active customer role/status guard';
+     OR position('pr.status = ''active''::public.record_status' IN v_definition) = 0
+     OR position('v_owner_id = v_customer_id' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'create_customer_request lacks active customer or self-business guard';
   END IF;
 
   SELECT pg_get_functiondef(p.oid) INTO v_definition
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'cancel_customer_request';
   IF v_definition IS NULL
-     OR position('An active customer profile is required' IN v_definition) = 0 THEN
-    RAISE EXCEPTION 'cancel_customer_request lacks active customer role/status guard';
+     OR position('An active customer profile is required' IN v_definition) = 0
+     OR position('customer_id = v_customer_id' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'cancel_customer_request lacks active customer or ownership guard';
   END IF;
 
   SELECT pg_get_functiondef(p.oid) INTO v_definition
@@ -91,24 +119,48 @@ BEGIN
   IF v_definition IS NULL
      OR position('An active merchant profile is required' IN v_definition) = 0
      OR position('p_decision IS NULL' IN v_definition) = 0
-     OR position('p_price::text IN (''NaN'', ''Infinity'', ''-Infinity'')' IN v_definition) = 0 THEN
-    RAISE EXCEPTION 'respond_customer_request lacks role or input validation';
+     OR position('p_price::text IN (''NaN'', ''Infinity'', ''-Infinity'')' IN v_definition) = 0
+     OR position('owner_id = v_actor_id' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'respond_customer_request lacks role, ownership, or input validation';
   END IF;
 
   SELECT pg_get_functiondef(p.oid) INTO v_definition
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'respond_to_point_redemption';
   IF v_definition IS NULL
-     OR position('An active merchant profile is required' IN v_definition) = 0 THEN
-    RAISE EXCEPTION 'respond_to_point_redemption lacks active merchant role/status guard';
+     OR position('An active merchant profile is required' IN v_definition) = 0
+     OR position('v_owner_id IS DISTINCT FROM v_actor' IN v_definition) = 0
+     OR position('redemption-reversal:' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'respond_to_point_redemption lacks role, ownership, or idempotent refund guard';
   END IF;
 
   SELECT pg_get_functiondef(p.oid) INTO v_definition
   FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'redeem_customer_points';
   IF v_definition IS NULL
-     OR position('An active customer profile is required' IN v_definition) = 0 THEN
-    RAISE EXCEPTION 'redeem_customer_points lacks active customer role/status guard';
+     OR position('An active customer profile is required' IN v_definition) = 0
+     OR position('v_business.owner_id = v_customer_id' IN v_definition) = 0
+     OR position('v_existing' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'redeem_customer_points lacks role, self-redemption, or idempotency guard';
+  END IF;
+
+  -- Idempotency constraints are the last line of defense against concurrent retries.
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+    WHERE schemaname = 'public'
+      AND indexname = 'customer_points_ledger_idempotency_key_key'
+      AND indexdef ILIKE 'CREATE UNIQUE INDEX%'
+  ) THEN
+    RAISE EXCEPTION 'Customer points ledger must enforce unique idempotency keys';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes
+    WHERE schemaname = 'public'
+      AND indexname = 'redemptions_customer_idempotency_key_uidx'
+      AND indexdef ILIKE 'CREATE UNIQUE INDEX%'
+  ) THEN
+    RAISE EXCEPTION 'Redemptions must enforce per-customer idempotency keys';
   END IF;
 END;
 $$;
