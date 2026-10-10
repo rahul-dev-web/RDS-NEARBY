@@ -14,6 +14,7 @@ class CustomerDiscoveryScreen extends StatefulWidget {
 
 class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
   final _searchController = TextEditingController();
+  final _localityController = TextEditingController();
   String? _categoryId;
   bool _openOnly = false;
   bool _availableOnly = false;
@@ -24,6 +25,10 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
   List<Map<String, dynamic>> _offers = [];
   List<Map<String, dynamic>> _products = [];
   List<Map<String, dynamic>> _services = [];
+  List<Map<String, dynamic>> _todayItems = [];
+  bool _todayLoading = false;
+  String? _todayError;
+  bool _todaySearched = false;
 
   SupabaseClient get _client => Supabase.instance.client;
   ReferralActivityService get _referralActivity => ReferralActivityService(_client);
@@ -34,6 +39,38 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
     _loadCategories();
     _search();
     _searchController.addListener(_onSearchChanged);
+  }
+
+  Future<void> _loadTodaysNearYou() async {
+    final locality = _localityController.text.trim();
+    if (locality.isEmpty) {
+      setState(() {
+        _todayError = 'Enter your locality or nearby area to find local deals.';
+        _todaySearched = false;
+        _todayItems = [];
+      });
+      return;
+    }
+    setState(() { _todayLoading = true; _todayError = null; _todaySearched = true; });
+    try {
+      final response = await _client.rpc('get_todays_near_you', params: {
+        'p_lat': null,
+        'p_lng': null,
+        'p_locality': locality,
+        'p_limit': 30,
+      });
+      if (!mounted) return;
+      setState(() {
+        _todayItems = List<Map<String, dynamic>>.from(response as List);
+        _todayLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _todayError = 'Today’s Near You is temporarily unavailable. Please try again.';
+        _todayLoading = false;
+      });
+    }
   }
 
   void _onSearchChanged() {
@@ -189,6 +226,7 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _localityController.dispose();
     super.dispose();
   }
 
@@ -215,6 +253,50 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
             Text('What do you need?', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             const Text('Find products, services and shops around you.'),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('🔥 Today’s Near You', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  const Text('Today’s active offers and promoted shops in your locality.'),
+                  const SizedBox(height: 10),
+                  Row(children: [
+                    Expanded(child: TextField(
+                      controller: _localityController,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (_) => _loadTodaysNearYou(),
+                      decoration: const InputDecoration(
+                        hintText: 'Enter locality / area',
+                        prefixIcon: Icon(Icons.location_on_outlined),
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    )),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: _todayLoading ? null : _loadTodaysNearYou,
+                      child: _todayLoading
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Text('Find'),
+                    ),
+                  ]),
+                  if (_todayError != null) ...[
+                    const SizedBox(height: 8),
+                    Text(_todayError!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  ],
+                  if (_todaySearched && !_todayLoading && _todayError == null && _todayItems.isEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text('No active offers or promoted shops were found for this locality yet. Try a nearby area.'),
+                  ],
+                  if (_todayItems.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    ..._todayItems.map((item) => _TodayNearYouCard(item: item)),
+                  ],
+                ]),
+              ),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _searchController,
