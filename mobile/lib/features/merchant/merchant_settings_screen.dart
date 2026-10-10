@@ -106,8 +106,8 @@ class _MerchantSettingsScreenState extends State<MerchantSettingsScreen> {
       const SizedBox(height: 10),
       ..._days.map((day) => Card(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
         SizedBox(width: 78, child: Text(day.value, style: const TextStyle(fontWeight: FontWeight.w600))),
-        Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, true), child: Text(_formatTime(_open[day.key] ?? const TimeOfDay(hour: 9, minute: 0)))),
-        Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, false), child: Text(_formatTime(_close[day.key] ?? const TimeOfDay(hour: 18, minute: 0)))),
+        Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, true), child: Text(_formatTime(_open[day.key] ?? const TimeOfDay(hour: 9, minute: 0))))),
+        Expanded(child: TextButton(onPressed: _closedDays.contains(day.key) ? null : () => _pickTime(day.key, false), child: Text(_formatTime(_close[day.key] ?? const TimeOfDay(hour: 18, minute: 0))))),
         Checkbox(value: _closedDays.contains(day.key), onChanged: (v) => setState(() { if (v == true) { _closedDays.add(day.key); } else { _closedDays.remove(day.key); } })),
       ])))),
       const SizedBox(height: 8),
