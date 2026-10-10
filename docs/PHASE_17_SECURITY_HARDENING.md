@@ -46,7 +46,7 @@ For each privileged RPC, verify:
 1. `20261010042216_phase17_rpc_search_path_hardening` — fixed search path on the five request/redemption RPCs.
 2. `20261010045002_phase17_rpc_role_authorization` — active profile/role checks for customer and merchant actions; null decisions and non-finite/negative/excessive prices rejected.
 3. `20261010045134_phase17_service_rpc_search_path` — fixed search path on seven service-only campaign, credit, request-queue and trigger helper functions.
-4. `20261010053000_phase17_fraud_review_rpc` — added a service-role-only `review_fraud_flag` RPC. It validates an active admin profile, row-locks the flag, permits only `open/reviewing → approved/rejected`, stores a bounded review reason, writes an audit event atomically, rejects conflicting terminal decisions, and makes an identical decision by the same reviewer idempotent.
+4. `20261010050002_phase17_fraud_review_rpc` — added a service-role-only `review_fraud_flag` RPC. It validates an active admin profile, row-locks the flag, permits only `open/reviewing → approved/rejected`, stores a bounded review reason, writes an audit event atomically, rejects conflicting terminal decisions, and makes an identical decision by the same reviewer idempotent.
 
 The `review-fraud-flag` Edge Function is deployed with JWT verification enabled. It reads the authenticated user's profile from the database (not user-editable metadata), requires an active `admin` role, validates the payload, and invokes the service-only RPC. The service-role key is never returned to the caller.
 
