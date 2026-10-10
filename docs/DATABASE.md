@@ -93,7 +93,7 @@ The ERD is a domain-level map, not a migration. Confirm exact cardinality, nulla
 ## Gaps to track
 
 - FCM delivery setup and real-device tests remain outstanding.
-- Today's Near You needs a tested feed query and explicit inclusion/ranking rules for active offers and sponsored campaigns.
+- Today's Near You has an initial locality-based RPC and mobile UI. GPS integration, normalized locality data, populated-data acceptance tests, and device-level verification remain outstanding.
 - Points redemption, analytics completeness, fraud/security hardening, membership billing and Ask Nearby Shops are later scope.
 - Security Advisor has reported authenticated SECURITY DEFINER request RPCs. Review their authorization checks and grants; do not blindly convert them to SECURITY INVOKER.
 - Keep GitHub migration files aligned with live migration history and verify each new migration before applying it.
