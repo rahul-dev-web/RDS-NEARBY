@@ -136,23 +136,25 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
         'is_sponsored': boostedIds.contains(business['id'].toString()),
       }).toList();
 
-      // Search matching active offers independently. Promote Offer labels the offer only,
-      // never the entire merchant's business card.
+      // Search active, in-window offers from active, verified businesses only.
+      // Promote Offer sponsors the individual offer, never the entire shop.
       if (query.isNotEmpty) {
         final offerEscaped = query.replaceAll(r'\', r'\\').replaceAll('%', r'\%').replaceAll('_', r'\_');
         final pattern = '%$offerEscaped%';
         try {
           final offerRows = await _client.from('offers')
-              .select('id,business_id,title,description,regular_price,offer_price,image_url,starts_at,ends_at,businesses(name,slug,address)')
+              .select('id,business_id,title,description,regular_price,offer_price,image_url,starts_at,ends_at,businesses!inner(name,slug,address,status,verification_status)')
               .eq('status', 'active')
+              .eq('businesses.status', 'active')
+              .eq('businesses.verification_status', 'verified')
               .lte('starts_at', now)
               .gt('ends_at', now)
               .or('title.ilike.$pattern,description.ilike.$pattern')
               .limit(30);
-          offers = List<Map<String, dynamic>>.from(offerRows).map((offer) => {
-            ...offer,
-            'is_sponsored': false,
-          }).toList();
+          offers = List<Map<String, dynamic>>.from(offerRows)
+              .map((offer) => {...offer, 'is_sponsored': false})
+              .toList();
+
           try {
             final campaignRows = await _client.from('campaigns')
                 .select('offer_id')
@@ -162,13 +164,35 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
                 .gt('ends_at', now)
                 .not('offer_id', 'is', null);
             final promotedOfferIds = List<Map<String, dynamic>>.from(campaignRows)
-                .map((campaign) => campaign['offer_id'].toString()).toSet();
+                .map((campaign) => campaign['offer_id']?.toString())
+                .whereType<String>()
+                .toSet();
             offers = offers.map((offer) => {
               ...offer,
               'is_sponsored': promotedOfferIds.contains(offer['id'].toString()),
             }).toList();
           } catch (_) {
-            // Keep matching offers organic if campaign labels cannot be fetched.
+            // Promotion lookup is supplementary; valid offers remain discoverable organically.
+          }
+
+          // Balanced 3:1 placement prevents sponsored offers from taking over results.
+          // Deduplicate by offer ID before ranking so a campaign cannot repeat a card.
+          final seenOfferIds = <String>{};
+          final uniqueOffers = offers.where((offer) =>
+              seenOfferIds.add(offer['id']?.toString() ?? '')).toList();
+          final organicOffers = uniqueOffers.where((offer) => offer['is_sponsored'] != true).toList();
+          final sponsoredOffers = uniqueOffers.where((offer) => offer['is_sponsored'] == true).toList();
+          offers = [];
+          var organicOfferIndex = 0;
+          var sponsoredOfferIndex = 0;
+          while (organicOfferIndex < organicOffers.length ||
+              sponsoredOfferIndex < sponsoredOffers.length) {
+            for (var slot = 0; slot < 3 && organicOfferIndex < organicOffers.length; slot++) {
+              offers.add(organicOffers[organicOfferIndex++]);
+            }
+            if (sponsoredOfferIndex < sponsoredOffers.length) {
+              offers.add(sponsoredOffers[sponsoredOfferIndex++]);
+            }
           }
         } catch (_) {
           // Offer search is supplementary; keep valid shop results available on partial failure.
@@ -182,8 +206,10 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
         final inventoryPattern = '%$inventoryEscaped%';
         try {
           final rows = await _client.from('business_products')
-              .select('id,business_id,name,description,price,unit,businesses(name,slug,address)')
+              .select('id,business_id,name,description,price,unit,businesses!inner(name,slug,address,status,verification_status)')
               .eq('status', 'active').eq('is_available', true)
+              .eq('businesses.status', 'active')
+              .eq('businesses.verification_status', 'verified')
               .or('name.ilike.$inventoryPattern,description.ilike.$inventoryPattern')
               .limit(30);
           products = List<Map<String, dynamic>>.from(rows);
@@ -192,8 +218,10 @@ class _CustomerDiscoveryScreenState extends State<CustomerDiscoveryScreen> {
         }
         try {
           final rows = await _client.from('business_services')
-              .select('id,business_id,name,description,price,duration_minutes,businesses(name,slug,address)')
+              .select('id,business_id,name,description,price,duration_minutes,businesses!inner(name,slug,address,status,verification_status)')
               .eq('status', 'active').eq('is_available', true)
+              .eq('businesses.status', 'active')
+              .eq('businesses.verification_status', 'verified')
               .or('name.ilike.$inventoryPattern,description.ilike.$inventoryPattern')
               .limit(30);
           services = List<Map<String, dynamic>>.from(rows);
