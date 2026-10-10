@@ -57,6 +57,8 @@ class _CustomerReferralScreenState extends State<CustomerReferralScreen> {
             .eq('status', 'active')
             .eq('verification_status', 'verified')
             .eq('local_rewards_enabled', true)
+            .gt('rewards_min_bill', 0)
+            .gt('rewards_max_discount', 0)
             .order('name')
             .limit(100),
       ]);
@@ -144,7 +146,7 @@ class _CustomerReferralScreenState extends State<CustomerReferralScreen> {
         _points = balance;
         _redeeming = false;
         _pendingIdempotencyKey = null;
-        _redemptionMessage = 'Redemption created. Show the redemption code to the shop. '
+        _redemptionMessage = 'Redemption code: $redemptionId. Show this code to the shop. '
             'Points used: $used · Discount: ₹${discount.toStringAsFixed(2)} · '
             'Pay: ₹${finalAmount.toStringAsFixed(2)}';
       });
