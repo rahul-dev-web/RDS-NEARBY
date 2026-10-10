@@ -210,7 +210,7 @@ class _CustomerReferralScreenState extends State<CustomerReferralScreen> {
                     const Card(child: ListTile(leading: Icon(Icons.storefront_outlined), title: Text('No participating shops yet'), subtitle: Text('Local Rewards will appear here when eligible shops enable and configure them.')))
                   else ...[
                     DropdownButtonFormField<String>(
-                      value: _selectedBusinessId,
+                      initialValue: _selectedBusinessId,
                       isExpanded: true,
                       decoration: const InputDecoration(labelText: 'Participating shop', border: OutlineInputBorder()),
                       items: _rewardBusinesses.map((business) => DropdownMenuItem<String>(
