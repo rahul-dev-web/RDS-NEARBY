@@ -46,8 +46,9 @@ For each exposed RPC, verify:
 
 1. `20261010042216_phase17_rpc_search_path_hardening` — all five request/redemption SECURITY DEFINER RPCs have an empty `search_path`; live catalog confirmed `anon` and `PUBLIC` cannot execute them, while `authenticated` retains required app access.
 2. `20261010045002_phase17_rpc_role_authorization` — added active profile/role checks to request creation/cancellation and merchant request/redemption responses. Also rejects a null request decision and non-finite/negative/excessive response prices.
+3. `20261010045134_phase17_service_rpc_search_path` — pinned the remaining seven service-only campaign, credit, request-queue and trigger helper SECURITY DEFINER functions to an empty `search_path`. Their live grants remain service-only; authenticated/anon execution is false.
 
-The second migration was verified against the live catalog: all five RPCs retain empty `search_path`; anonymous/PUBLIC execution remains false; role/status guard markers are present in the deployed function bodies.
+Live catalog verification confirms all 12 public SECURITY DEFINER functions now have `search_path=""`; no public/anon EXECUTE grants were found. Only the five intended request/redemption RPCs are executable by `authenticated`.
 
 ### Known functions requiring integration testing
 
@@ -57,7 +58,7 @@ The second migration was verified against the live catalog: all five RPCs retain
 - `redeem_customer_points`
 - `respond_to_point_redemption`
 
-The catalog regression test in `supabase/tests/phase17_rpc_security.sql` now checks search path, grants, and expected role/input-guard markers. These catalog checks do not replace negative integration tests with real customer and merchant JWTs.
+The catalog regression test in `supabase/tests/phase17_rpc_security.sql` checks empty search paths, grants, and expected role/input-guard markers. These catalog checks do not replace negative integration tests with real customer and merchant JWTs.
 
 ## Required fraud checks
 
