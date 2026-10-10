@@ -56,7 +56,8 @@ BEGIN
         'create_boost_shop_campaign',
         'create_promote_offer_campaign',
         'expire_stale_customer_requests',
-        'finish_customer_request_notification'
+        'finish_customer_request_notification',
+        'review_fraud_flag'
       )
       AND (
         has_function_privilege('anon', p.oid, 'EXECUTE')
@@ -142,6 +143,34 @@ BEGIN
      OR position('v_business.owner_id = v_customer_id' IN v_definition) = 0
      OR position('v_existing' IN v_definition) = 0 THEN
     RAISE EXCEPTION 'redeem_customer_points lacks role, self-redemption, or idempotency guard';
+  END IF;
+
+  -- Fraud review is a service-only RPC with an in-function admin check and atomic audit.
+  SELECT pg_get_functiondef(p.oid) INTO v_definition
+  FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'review_fraud_flag';
+  IF v_definition IS NULL
+     OR position('p.role = ''admin''::public.user_role' IN v_definition) = 0
+     OR position('p.status = ''active''::public.record_status' IN v_definition) = 0
+     OR position('FOR UPDATE' IN v_definition) = 0
+     OR position('public.audit_logs' IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'review_fraud_flag lacks active-admin, row-lock, or audit safeguards';
+  END IF;
+
+  IF NOT has_function_privilege('service_role', 'public.review_fraud_flag(uuid,uuid,text,text)', 'EXECUTE')
+     OR has_function_privilege('anon', 'public.review_fraud_flag(uuid,uuid,text,text)', 'EXECUTE')
+     OR has_function_privilege('authenticated', 'public.review_fraud_flag(uuid,uuid,text,text)', 'EXECUTE')
+     OR EXISTS (
+       SELECT 1
+       FROM aclexplode(coalesce(
+         (SELECT p.proacl FROM pg_proc p
+          WHERE p.oid = 'public.review_fraud_flag(uuid,uuid,text,text)'::regprocedure),
+         acldefault('f', (SELECT p.proowner FROM pg_proc p
+          WHERE p.oid = 'public.review_fraud_flag(uuid,uuid,text,text)'::regprocedure))
+       )) acl
+       WHERE acl.grantee = 0 AND acl.privilege_type = 'EXECUTE'
+     ) THEN
+    RAISE EXCEPTION 'review_fraud_flag must be executable only by service_role';
   END IF;
 
   -- Idempotency constraints are the last line of defense against concurrent retries.
