@@ -14,7 +14,9 @@ Status: Initial locality-based feed implemented; GPS-powered feed and production
 
 ## Database contract
 
-Migration: `20261010100000_phase14_todays_near_you_feed.sql`
+ Migrations:
+- `20261010100000_phase14_todays_near_you_feed.sql`
+- `20261010110000_phase14_locality_match_hardening.sql` (normalizes hyphenated locality IDs and escapes LIKE metacharacters)
 
 RPC: `public.get_todays_near_you(p_lat, p_lng, p_locality, p_limit)`
 
@@ -25,7 +27,7 @@ RPC: `public.get_todays_near_you(p_lat, p_lng, p_locality, p_limit)`
 - Active Promote Offer campaigns label only their associated offer.
 - Active Boost Shop campaigns create a sponsored shop card.
 - With coordinates, organic offers are limited to 15 km; campaign target radius further constrains sponsored visibility.
-- Without coordinates, a locality must be provided; it matches the business locality ID or address.
+- Without coordinates, a locality must be provided; hyphenated locality IDs are normalized and locality input is safely matched against the business locality ID or address.
 - The query is capped at 50 results and sorts distance first, then open status, then sponsored signal. Sponsored content is not globally forced above closer organic results.
 - No customer coordinates are persisted.
 
