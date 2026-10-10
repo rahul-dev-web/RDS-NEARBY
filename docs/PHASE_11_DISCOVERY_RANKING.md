@@ -5,9 +5,11 @@ Implemented search-first discovery for matching shops, products, services, and o
 
 ## Frozen behavior
 - Keep search-first local discovery and existing public eligibility rules.
-- Preserve existing open-first baseline ordering.
+- Rank matching business names by relevance (exact name, name prefix, name contains, description, then address); use open status and name as tie-breakers.
 - Only an active Boost Shop campaign on a query-matching active, verified business adds a sponsored signal.
 - Interleave up to three organic results before each sponsored result, limiting sponsored density to roughly 1 in 4 slots when organic results are available.
+- For offers, only active offers inside their start/end window from active, verified businesses are eligible; active Promote Offer campaigns label the matching offer only.
+- Interleave up to three organic offers before each promoted offer, and deduplicate offer cards by offer ID.
 - Label sponsored results `SPONSORED`.
 - Never let paid promotion introduce unrelated businesses or displace the organic discovery model.
 - Campaign is valid only when `starts_at <= now < ends_at`.
@@ -25,8 +27,9 @@ Implemented search-first discovery for matching shops, products, services, and o
 - Inventory results are supplementary and do not carry paid sponsor labels; Boost Shop remains a business-card promotion and Promote Offer remains offer-card-only.
 
 ## Offer discovery
-- Search now includes matching active offers by title/description, alongside matching shops.
-- A `promote_offer` campaign labels only its matching offer card `SPONSORED`; it never marks the entire business as sponsored.
+- Search includes matching active offers by title/description, alongside matching shops.
+- Offer queries explicitly require an active, verified associated business. A `promote_offer` campaign labels only its matching offer card `SPONSORED`; it never marks the entire business as sponsored.
+- Offer ranking balances organic and promoted cards in a 3:1 cadence and removes duplicate offer IDs before rendering.
 - Offer cards are supplementary results; if the campaign lookup fails, matching offers remain visible as organic results.
 - Public offer reads remain constrained by existing RLS: active, time-valid offers from active, verified businesses.
 - This slice does not implement the Phase 13 Today's Near You feed, geo-distance ranking, or offer redemption.
