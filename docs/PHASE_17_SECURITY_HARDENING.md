@@ -8,28 +8,56 @@ Status: implementation started. This phase is not production-ready until the acc
 - Live project ref: `kkgkvpjcmwfarkdkhcme` (ap-south-1).
 - Phase 16 analytics migrations are recorded in the live database.
 - Core tables have RLS enabled.
-- Before Phase 17, fraud review records had a client-facing `fraud_own_read` policy. The policy has now been removed and direct `anon`/`authenticated` table privileges revoked; fraud flags should not be exposed to the account being reviewed.
-- Several public SECURITY DEFINER RPCs exist for customer requests and redemption. They require focused authorization review and negative integration tests; a Security Advisor warning alone does not prove exploitability or safety.
+- Fraud review records had a client-facing `fraud_own_read` policy. It has been removed and direct `anon`/`authenticated` table privileges revoked; fraud flags should not be exposed to the account being reviewed.
 - The live database currently has no business rows and no analytics events, so populated-data behaviour has not been proven.
 
 ## Security goals
 
 1. Keep fraud signals and review metadata private to trusted server-side/admin workflows.
 2. Prevent customers and merchants from reading or writing fraud flags directly.
-3. Verify every SECURITY DEFINER RPC has a fixed search path, explicit caller authentication, ownership/role checks, validated inputs, and least-privilege EXECUTE grants.
+3. Verify every SECURITY DEFINER RPC has a fixed search path, explicit caller authentication, active profile/role checks, ownership checks, validated inputs, and least-privilege EXECUTE grants.
 4. Ensure wallet/ledger writes remain server-only and idempotent.
 5. Ensure admin decisions are auditable and cannot be authorized from user-editable profile metadata.
 6. Add fraud detection incrementally; never automatically accuse/suspend a user solely from a weak heuristic.
 
 ## Initial database hardening
 
-Migration: `20261010041244_phase17_private_fraud_flags.sql` (matches the migration version recorded in the live Supabase project).
+Migration: `20261010041244_phase17_private_fraud_flags.sql`.
 
 - Drops `fraud_own_read`.
 - Revokes direct `anon` and `authenticated` privileges on `public.fraud_flags`.
 - Keeps RLS enabled with no client policies, so direct client access is blocked.
 - Trusted backend workflows using `service_role` / database owner continue to perform fraud review operations.
 - Live verification: `pg_policies` returned no policies for `public.fraud_flags`; Security Advisor reports the expected informational `rls_enabled_no_policy` finding.
+
+## SECURITY DEFINER RPC review
+
+For each exposed RPC, verify:
+- fixed `search_path` (prefer empty path and schema-qualified references);
+- no caller-controlled identity parameter is trusted without checking it against `auth.uid()`;
+- explicit authentication and active profile/role checks where applicable;
+- object ownership and valid state transition are checked under row lock where concurrent calls matter;
+- arguments are bounded and enum/state inputs allowlisted;
+- EXECUTE is revoked from `PUBLIC` and `anon` unless a documented public use case exists;
+- direct writes to protected tables are revoked from client roles;
+- retries cannot duplicate rewards, refunds, campaign spends, or request responses.
+
+### Live RPC hardening applied
+
+1. `20261010042216_phase17_rpc_search_path_hardening` — all five request/redemption SECURITY DEFINER RPCs have an empty `search_path`; live catalog confirmed `anon` and `PUBLIC` cannot execute them, while `authenticated` retains required app access.
+2. `20261010045002_phase17_rpc_role_authorization` — added active profile/role checks to request creation/cancellation and merchant request/redemption responses. Also rejects a null request decision and non-finite/negative/excessive response prices.
+
+The second migration was verified against the live catalog: all five RPCs retain empty `search_path`; anonymous/PUBLIC execution remains false; role/status guard markers are present in the deployed function bodies.
+
+### Known functions requiring integration testing
+
+- `create_customer_request`
+- `cancel_customer_request`
+- `respond_customer_request`
+- `redeem_customer_points`
+- `respond_to_point_redemption`
+
+The catalog regression test in `supabase/tests/phase17_rpc_security.sql` now checks search path, grants, and expected role/input-guard markers. These catalog checks do not replace negative integration tests with real customer and merchant JWTs.
 
 ## Required fraud checks
 
@@ -43,20 +71,6 @@ Migration: `20261010041244_phase17_private_fraud_flags.sql` (matches the migrati
 - Admin review actions must record actor, action, entity, reason, and timestamp.
 
 Use deterministic rule-based flags first. Device fingerprinting is not required for MVP and must not collect invasive identifiers without a separately reviewed privacy basis.
-
-## SECURITY DEFINER RPC review
-
-For each exposed RPC, verify:
-- fixed `search_path` (prefer empty path and schema-qualified references, or a tightly controlled path);
-- no caller-controlled identity parameter is trusted without checking it against `auth.uid()`;
-- explicit `auth.uid() IS NOT NULL` and active profile/role checks where applicable;
-- object ownership and valid state transition are checked under row lock where concurrent calls matter;
-- all arguments are bounded and enum/state inputs allowlisted;
-- EXECUTE is revoked from `PUBLIC` and `anon` unless a documented public use case exists;
-- direct writes to protected tables are revoked from client roles;
-- retries cannot duplicate rewards, refunds, campaign spends, or request responses.
-
-Known functions requiring focused negative tests include `create_customer_request`, `cancel_customer_request`, `respond_customer_request`, `redeem_customer_points`, and `respond_to_point_redemption`. Service-only campaign and credit functions must remain inaccessible to direct authenticated callers.
 
 ## Acceptance tests
 
@@ -75,23 +89,13 @@ Known functions requiring focused negative tests include `create_customer_reques
 5. Authenticated clients cannot call campaign-spend RPCs directly.
 6. Anonymous clients cannot execute private reward/request RPCs.
 7. Replayed idempotency keys do not duplicate deductions/refunds/rewards.
-8. Suspended profiles cannot perform customer/merchant actions.
+8. Suspended profiles and wrong-role profiles cannot perform customer/merchant actions.
+9. Null request decisions and NaN/infinite/negative/excessive prices are rejected.
 
-### Release gate
+## Release gate
+
 - Verify migration history and ensure the checked-in migration version matches the live version.
 - Re-run Security and Performance Advisors.
 - Run Flutter analyze/tests and Next.js typecheck/build.
 - Run authenticated integration tests with separate customer and merchant test accounts in a non-production environment.
 - Do not call Phase 17 complete until results are recorded here.
-
-
-## RPC search-path hardening (2026-10-10)
-
-Migration recorded in live Supabase: `20261010042216_phase17_rpc_search_path_hardening`.
-
-- Pinned all five request/redemption SECURITY DEFINER RPCs to an empty `search_path`; their relations, enums, and auth helper references are schema-qualified.
-- Verified live catalog: all five functions have `search_path=""`.
-- Verified live grants: `anon` and `PUBLIC` cannot execute these five RPCs; `authenticated` can, as required by the current Flutter request/redemption flows.
-- Added `supabase/tests/phase17_rpc_security.sql` for catalog-level regression checks.
-
-**Remaining:** authenticated-callable SECURITY DEFINER RPCs still appear in Security Advisor by design. This change hardens name resolution but does not replace function-level ownership/role/state checks or authenticated negative integration tests. Do not mark Phase 17 complete yet.
