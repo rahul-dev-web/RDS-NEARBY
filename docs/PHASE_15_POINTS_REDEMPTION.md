@@ -9,7 +9,7 @@ Status: Initial customer redemption and merchant resolution flows implemented; p
 - Each business funds its own discount.
 - Only active, verified businesses with Local Rewards enabled and valid reward limits can accept redemptions.
 - Bill amount must meet the merchant's configured minimum bill.
-- Discount is capped by requested point value, merchant maximum discount, and bill amount.
+- Discount is capped by requested point value, merchant maximum discount, and bill amount. Whole-point rounding rounds down to the nearest 10 paise so the final discount never exceeds the configured cap.
 - Only the points corresponding to the actual discount are deducted. Example: a requested 250 points at a shop with a ₹20 cap results in ₹20 discount and 200 points spent.
 - Customer cannot redeem at their own business.
 
@@ -18,6 +18,8 @@ Status: Initial customer redemption and merchant resolution flows implemented; p
 Migrations:
 - `20261010120000_phase15_points_redemption.sql`
 - `20261010121000_phase15_redemption_resolution.sql`
+- `20261010122000_phase15_redemption_action_validation.sql` (rejects null/invalid merchant actions)
+- `20261010123000_phase15_discount_rounding.sql` (ensures whole-point rounding never exceeds the merchant cap)
 
 RPCs:
 - `public.redeem_customer_points(p_business_id, p_bill_amount, p_points_to_redeem, p_idempotency_key)`
